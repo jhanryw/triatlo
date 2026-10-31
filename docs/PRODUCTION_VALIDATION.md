@@ -17,6 +17,8 @@
 | 8 | Volumes, isolamento, persistência, backup | ⏸ **Não verificáveis sem acesso ao servidor**, e sem sentido enquanto o item 3 existir |
 | 9 | Credenciais de demonstração do painel (`supabase` / senha padrão) | ✅ recusadas (401) — mas o JWT padrão continua valendo |
 
+> Roteiro ordenado e atualizado: [SUPABASE_RUNBOOK.md](SUPABASE_RUNBOOK.md). Reverificação em 2026-10-31 (mais tarde): **nada mudou** — gateway ainda Kong, chave demo ainda aceita, web ainda no build antigo.
+
 ## Ações imediatas (suas — exigem o EasyPanel)
 
 1. **Agora, 2 minutos:** no EasyPanel, projeto `qarvon` → serviço **`supabase-triatlo`** → **Stop** (não "Destroy"). Enquanto estiver no ar com o JWT padrão, qualquer pessoa pode criar usuários, enviar arquivos e consultar a API como administrador. Ainda **não há dado real**, então o risco hoje é de abuso, não de vazamento. Não mexa nos outros serviços do projeto `qarvon`.

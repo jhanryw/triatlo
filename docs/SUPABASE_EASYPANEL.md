@@ -2,6 +2,8 @@
 
 > Estado (2026-10-31): **preparado, NÃO implantado.** Nada foi aplicado ao EasyPanel, nenhum container foi criado ou reiniciado. Docker não existe na máquina de desenvolvimento, então o compose adaptado **nunca foi executado**: as verificações feitas são estruturais (`npm run supabase:check`). Itens marcados ⚠️ são suposições sobre o EasyPanel que só você consegue confirmar na tela dele; se algo divergir, pare e me diga o que a tela mostra.
 >
+> **Roteiro operacional resumido e ordenado (substituição, backup, migrations, testes): [SUPABASE_RUNBOOK.md](SUPABASE_RUNBOOK.md).**
+>
 > Stack: oficial `supabase/supabase` tag `self-hosted/v0.8.3` (commit `bc27d26…`), imagens fixadas. Detalhes e diferenças: [infra/supabase/UPSTREAM.md](../infra/supabase/UPSTREAM.md).
 
 ## 0. O que já está pronto

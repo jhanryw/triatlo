@@ -580,7 +580,7 @@ services:
         "/app/bin/migrate && /app/bin/supavisor eval \"$$(cat /etc/pooler/pooler.exs)\" && /app/bin/server"
       ]
 
-  # Triatlo addition: scheduled logical backups (see docs/SUPABASE_EASYPANEL.md §7 and infra/backup/).
+  # Triatlo addition: scheduled logical backups + operations container (see docs/SUPABASE_RUNBOOK.md and infra/backup/).
   # Dumps land in the db-backups volume; copying that volume OFF the server is a separate, required step.
   backup:
     image: supabase/postgres:17.6.1.136
@@ -590,6 +590,10 @@ services:
         condition: service_healthy
     volumes:
       - ./backup/backup.sh:/backup.sh:ro
+      # Operations: the repository's supabase/ folder (migrations, runner, tests) is mounted read-only so migrations can be
+      # applied from this container's console (PG* variables below already authenticate against db), without publishing
+      # the database port. Requires the Git checkout to contain the whole repository (verify: ls /supabase/migrations).
+      - ../../supabase:/supabase:ro
       - storage-data:/var/lib/storage:ro
       - db-backups:/backups
     environment:

@@ -86,6 +86,12 @@ seconds_until_next_run() {
   echo $((target - now))
 }
 
+# One-off mode (used before migrations):  bash /backup.sh --once   -> runs a single backup and exits with its status
+if [ "${1:-}" = "--once" ]; then
+  run_backup
+  exit $?
+fi
+
 log "backup sidecar started (daily at ${BACKUP_HOUR_UTC}:00 UTC, retention ${BACKUP_RETENTION_DAYS} days, encryption: $([ -n "$PASSPHRASE" ] && echo on || echo off))"
 if [ "$BACKUP_ON_START" = "true" ]; then
   sleep 60   # let the database finish its first-boot initialization

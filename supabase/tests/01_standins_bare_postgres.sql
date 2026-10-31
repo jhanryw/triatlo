@@ -1,7 +1,7 @@
+-- Stand-ins for a BARE PostgreSQL (CI/local only). On a real Supabase database almost nothing here is created.
+-- NEVER run against production: tests/run.sh --production does not execute this file.
 -- Test prelude. Idempotent. On the real Supabase Postgres image almost everything below already exists and is left alone;
 -- on a bare PostgreSQL it creates minimal stand-ins so the same migrations and tests run (never used in production).
-create schema if not exists tests;
-
 do $$
 declare
   r text;
@@ -41,56 +41,5 @@ begin
 end
 $$;
 
-grant usage on schema auth, public, storage, tests to anon, authenticated, service_role;
+grant usage on schema auth, public, storage to anon, authenticated, service_role;
 
-create or replace function tests.assert(cond boolean, msg text) returns void language plpgsql as $$
-begin
-  if cond is not true then raise exception 'ASSERTION FAILED: %', msg; end if;
-end $$;
-
--- Runs a statement and requires it to fail with the given SQLSTATE (42501 = permission/RLS, 23514 = check, 23503 = FK, 23505 = unique).
-create or replace function tests.throws(stmt text, expected text, msg text) returns void language plpgsql as $$
-begin
-  begin
-    execute stmt;
-  exception when others then
-    if sqlstate = expected then return; end if;
-    raise exception 'ASSERTION FAILED: % (expected SQLSTATE %, got %: %)', msg, expected, sqlstate, sqlerrm;
-  end;
-  raise exception 'ASSERTION FAILED: % (statement did not fail)', msg;
-end $$;
-
-create or replace function tests.new_user(p_email text) returns uuid language plpgsql as $$
-declare v uuid := gen_random_uuid();
-begin
-  insert into auth.users (id, email) values (v, p_email);
-  return v;
-end $$;
-
-create or replace function tests.as_user(p_uid uuid) returns void language plpgsql as $$
-begin
-  perform set_config('request.jwt.claims', json_build_object('sub', p_uid, 'role', 'authenticated')::text, true);
-  perform set_config('request.jwt.claim.sub', p_uid::text, true);
-  execute 'set local role authenticated';
-end $$;
-
-create or replace function tests.as_anon() returns void language plpgsql as $$
-begin
-  perform set_config('request.jwt.claims', '', true);
-  perform set_config('request.jwt.claim.sub', '', true);
-  execute 'set local role anon';
-end $$;
-
-create or replace function tests.as_service() returns void language plpgsql as $$
-begin
-  perform set_config('request.jwt.claims', json_build_object('role', 'service_role')::text, true);
-  perform set_config('request.jwt.claim.sub', '', true);
-  execute 'set local role service_role';
-end $$;
-
-create or replace function tests.reset() returns void language plpgsql as $$
-begin
-  execute 'reset role';
-  perform set_config('request.jwt.claims', '', true);
-  perform set_config('request.jwt.claim.sub', '', true);
-end $$;
