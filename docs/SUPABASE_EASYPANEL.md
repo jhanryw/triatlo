@@ -19,9 +19,9 @@ Conferências feitas contra o upstream: todas as variáveis `${…}` do compose 
 
 ## 1. Pré-requisitos antes de tocar no EasyPanel
 
-1. **Tornar o repositório privado.** Em 2026-10-31 a API do GitHub mostra `jhanryw/triatlo` como **público** (`private: false`). Em *Settings → General → Danger Zone → Change repository visibility → Make private*. (Nada sensível foi enviado: o repositório ainda está vazio.)
-2. **Enviar o código** (commits locais) para `main` — preciso da sua autorização explícita depois do passo 1. O EasyPanel faz o deploy do Supabase **a partir deste repositório** (os arquivos de `infra/supabase/volumes/` precisam existir no checkout).
-3. **Acesso do EasyPanel ao repositório privado** ✅ (docs do EasyPanel): fonte *Git* com **deploy key** SSH somente leitura gerada pelo EasyPanel — adicione a chave em GitHub → repositório → *Settings → Deploy keys* (sem permissão de escrita). Alternativa: token do GitHub configurado no servidor + fonte *GitHub*.
+1. ✅ **Código enviado** para `main` em https://github.com/jhanryw/triatlo (CI verde, run #3). O EasyPanel faz o deploy do Supabase **a partir deste repositório** (os arquivos de `infra/supabase/volumes/` precisam existir no checkout — existem).
+2. **Repositório público (decisão A-23).** Por isso: nunca commite segredos (o CI roda gitleaks no histórico inteiro e o `security-check`); a configuração de infraestrutura é pública, mas **sem credenciais** — elas existem só em `~/.triatlo-secrets/` e no `.env` do EasyPanel.
+3. **Acesso do EasyPanel ao repositório** ✅ (docs do EasyPanel): repositório público não precisa de token. Use a fonte *Git* com a URL HTTPS `https://github.com/jhanryw/triatlo.git`; não é necessária deploy key.
 4. **Guardar o arquivo de segredos** num gerenciador de senhas. Ele é a única cópia. Sem ele, restaurar o banco é impossível (a senha do Postgres e as chaves JWT ficam gravadas nos dados). Para conferir sem mostrar valores:
 
    ```bash
@@ -33,7 +33,7 @@ Conferências feitas contra o upstream: todas as variáveis `${…}` do compose 
 Nomes sugeridos: projeto **`triatlo`**; serviços **`supabase`** (Compose), **`web`** e **`worker`** (App). Use um projeto só para este app: nada é reutilizado de outros projetos.
 
 ### 2.1 Serviço Compose `supabase`
-1. *Create Service → Compose.* Fonte **Git**: URL SSH do repositório, branch `main`, **build path `/infra/supabase`**, arquivo `docker-compose.yml`. Cole a deploy key no GitHub (passo 1.3).
+1. *Create Service → Compose.* Fonte **Git**: URL `https://github.com/jhanryw/triatlo.git`, branch `main`, **build path `/infra/supabase`**, arquivo `docker-compose.yml`.
 2. **Não clique em Deploy.** Abra o aviso de compatibilidade do EasyPanel: ele não deve apontar `ports:` nem `container_name:` (o compose adaptado não tem nenhum). ⚠️ Se aparecer qualquer aviso, copie o texto para mim.
 3. **Domínios** (aba *Domains*) — **somente** estes três, todos com o **mesmo host gerado pelo EasyPanel**, serviço `api-gw`, porta **8000**, protocolo HTTP, HTTPS ativado:
 
@@ -87,7 +87,7 @@ Isso só altera `SUPABASE_PUBLIC_URL`, `API_EXTERNAL_URL` (= API + `/auth/v1`) e
 
 ## 5. Implantar o Supabase (só depois da sua autorização)
 
-1. Conferir: repositório privado e enviado; deploy key configurada; `.env` colado com as 3 URLs; domínios `/auth/v1`, `/rest/v1`, `/storage/v1` criados; **nenhuma** porta publicada.
+1. Conferir: repositório enviado (já está); `.env` colado com as 3 URLs; domínios `/auth/v1`, `/rest/v1`, `/storage/v1` criados; **nenhuma** porta publicada.
 2. Clique **Deploy** no serviço `supabase`. A primeira subida leva alguns minutos (o banco inicializa os roles e o pooler migra).
 3. Esperado: todos os serviços *healthy* (`db`, `auth`, `rest`, `storage`, `meta`, `studio`, `api-gw`, `supavisor`, `realtime`, `functions`, `imgproxy`); `backup` em execução. Logs do `backup` mostram `backup sidecar started` e, ~60 s depois, o primeiro backup.
 4. **Se algo falhar, não use "Destroy"/reset** (apagaria os volumes). Copie os logs e me envie.
@@ -130,7 +130,7 @@ Confirme também, de fora do servidor, que as portas estão fechadas: `nc -vz IP
 
 ## 10. Hipóteses a validar na primeira implantação
 
-- ⚠️ EasyPanel: fonte Git do Compose resolve `./volumes/...` a partir do build path; deploy key funciona; múltiplos domínios com caminho para o mesmo serviço; domínio gerado disponível para serviço Compose.
+- ⚠️ EasyPanel: fonte Git do Compose resolve `./volumes/...` a partir do build path; clone HTTPS do repositório público funciona; múltiplos domínios com caminho para o mesmo serviço; domínio gerado disponível para serviço Compose.
 - ⚠️ `docker compose version` ≥ v2 no servidor; versão do Docker suficiente para as imagens (`supabase/postgres:17`).
 - ⚠️ A imagem do banco contém `openssl` (necessário só se ativar criptografia dos backups) — conferir com `docker exec <container-backup> which openssl`.
 - ⚠️ Recursos: 11 containers + app + worker + build do Next. Você afirmou que o VPS comporta; vamos observar memória nos primeiros dias (`docker stats`). Reduzir (sem `functions`/`realtime`) é possível, mas diverge do upstream.

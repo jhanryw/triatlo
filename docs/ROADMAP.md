@@ -20,7 +20,7 @@ Pendente para sair: aprovação do plano e resposta às pendências Q-01…Q-04 
 **Aceite**: `lint`, `typecheck`, `test`, `build` verdes localmente e no CI; imagens Docker constroem e sobem; `/api/health` responde em produção sob HTTPS; app instala na Tela de Início do iPhone; nenhum segredo no repositório; Supabase acessível (se a infra estiver pronta) e Studio protegido.
 **Fora**: autenticação, tabelas, funcionalidades.
 
-**Status (2026-10-31): implementada localmente; pendente validação no CI e no servidor.** Feito: monorepo npm workspaces; `shared`/`domain` com contratos de plano versionado, proposta, aprovação, justificativa e auditoria (sem critérios esportivos); app Next.js 16 com 6 seções, estados vazios e conteúdo de demonstração identificado; manifest, ícones e service worker; arquitetura de Web Push **inativa**; cliente Supabase sem servidor; worker esqueleto com `/healthz`; Dockerfiles; GitHub Actions; `scripts/security-check.mjs`; 61 testes. **Não validado**: build Docker e workflow (sem Docker local nem remoto GitHub), registro real do service worker e instalação no iPhone, deploy no EasyPanel, Supabase. Ver `docs/DEPLOYMENT.md` e `DECISIONS.md` (A-15…A-22, P-17…P-22, Q-14…Q-16).
+**Status (2026-10-31): implementada e validada no CI (GitHub Actions run #3: lint, tipos, testes, build, auditoria, gitleaks, build e smoke test das imagens Docker); pendente validação no servidor.** Feito: monorepo npm workspaces; `shared`/`domain` com contratos de plano versionado, proposta, aprovação, justificativa e auditoria (sem critérios esportivos); app Next.js 16 com 6 seções, estados vazios e conteúdo de demonstração identificado; manifest, ícones e service worker; arquitetura de Web Push **inativa**; cliente Supabase sem servidor; worker esqueleto com `/healthz`; Dockerfiles; GitHub Actions; `scripts/security-check.mjs`; 61 testes. **Não validado**: registro real do service worker e instalação no iPhone, deploy no EasyPanel, Supabase. Ver `docs/DEPLOYMENT.md` e `DECISIONS.md` (A-15…A-22, P-17…P-22, Q-14…Q-16).
 
 ## E2 — Persistência e segurança
 **Escopo**: Auth (cadastro público desligado), migrações versionadas, tabelas essenciais (perfil, disponibilidade, sessões, check-ins, auditoria, jobs, assinaturas push — o que for necessário), RLS em tudo, Storage privado, papéis (web/worker), backup + restauração testada, exportação/exclusão básicas.
@@ -59,11 +59,11 @@ Cenários: boa recuperação; fadiga; alimentação insuficiente; mudança de ho
 **Repositório e qualidade**
 - [ ] Repositório privado no GitHub; branch `main` protegida; `.gitignore` bloqueia `.env*`
 - [x] `npm ci` com lockfile funciona do zero (verificado localmente em 2026-10-31)
-- [x] `lint`, `typecheck`, `test`, `build` verdes **localmente**; [ ] verdes no CI (workflow nunca executado)
-- [x] Varredura de segredos local sem achados (`npm run security:check`); [ ] gitleaks no CI
+- [x] `lint`, `typecheck`, `test`, `build` verdes **localmente**; [x] verdes no CI (run #3)
+- [x] Varredura de segredos local sem achados (`npm run security:check`); [x] gitleaks no CI
 
 **Build e deploy**
-- [ ] Imagens `web` e `worker` constroem (multi-stage, usuário não-root, Node fixado) — escritas, **não executadas** (sem Docker local); layout `standalone` validado rodando `node apps/web/server.js` localmente
+- [ ] Imagens `web` e `worker` constroem (multi-stage, usuário não-root, Node fixado) — escritas, construídas e testadas (smoke test) no CI; layout `standalone` também validado localmente
 - [ ] EasyPanel: dois serviços App ligados ao GitHub, auto deploy por push funcionando
 - [ ] Variáveis (incl. `NEXT_PUBLIC_*` como variáveis de build) configuradas só no EasyPanel
 - [ ] `GET https://app.<domínio>/api/health` → 200 sob HTTPS válido

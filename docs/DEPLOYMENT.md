@@ -27,7 +27,7 @@ git remote add origin git@github.com:<owner>/<repo>.git
 git push -u origin main
 ```
 
-Conferir na aba Actions: `quality` (Node 22 e 24), `security` e `docker` verdes. **O workflow nunca foi executado**; falhas na primeira rodada são esperadas e informativas (principalmente o job `docker`, que não pôde ser testado localmente). Ativar *branch protection* em `main` exigindo esses jobs.
+Conferir na aba Actions: `quality` (Node 22 e 24), `security` e `docker` verdes. O workflow **já foi executado com sucesso** (run #3, 2026-10-31). Histórico das primeiras rodadas em `docs/DECISIONS.md` §F. Ativar *branch protection* em `main` exigindo esses jobs.
 
 ## 4. Serviços no EasyPanel
 
