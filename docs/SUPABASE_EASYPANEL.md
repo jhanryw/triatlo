@@ -75,7 +75,7 @@ Isso só altera `SUPABASE_PUBLIC_URL`, `API_EXTERNAL_URL` (= API + `/auth/v1`) e
 | `SUPABASE_SECRET_KEY` | (já no `.env`) | **✖ nunca** | ✔ (Etapa 3/4) | Só servidor |
 | `SERVICE_ROLE_KEY`, `JWT_SECRET`, `JWT_KEYS`, `POSTGRES_PASSWORD`, `DASHBOARD_PASSWORD` | ✔ | **✖ nunca** | ✖ | Internos |
 
-- O Next.js lê **apenas** `NEXT_PUBLIC_SUPABASE_URL` e `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` (não há nenhuma variável de Supabase de servidor no app web). Como são embutidas no *build*, defina-as no serviço `web` **antes** de implantar; alterá-las exige novo build.
+- O Next.js lê **apenas** `NEXT_PUBLIC_SUPABASE_URL` e `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` (aceita também `SUPABASE_URL`/`SUPABASE_PUBLISHABLE_KEY`). **Desde a rodada de 2026-10-31 elas são lidas em runtime** (o EasyPanel não repassou as variáveis ao build): basta defini-las no serviço `web` e reiniciar — não é preciso rebuild. Diagnóstico: `/api/health` e `/api/health/supabase`.
 - Copiar só o valor público para a área de transferência, sem mostrá-lo:
 
   ```bash

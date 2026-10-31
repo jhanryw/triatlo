@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { readPublicConfig } from "@/lib/env";
+import type { PublicConfig } from "@/lib/env";
 import { disablePush, enablePush, type EnablePushResult } from "@/lib/push/client";
 import {
   PUSH_STATE_MESSAGES,
@@ -22,8 +22,7 @@ const FAILURE_MESSAGES: Record<Exclude<EnablePushResult, { ok: true }>["reason"]
  * Notifications card. The permission prompt is only requested from the button's click handler
  * (explicit user action) and only when the push backend is configured.
  */
-export function PushSetup() {
-  const config = readPublicConfig();
+export function PushSetup({ config }: { config: PublicConfig }) {
   const [env, setEnv] = useState<PushEnvironment | null>(null);
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);

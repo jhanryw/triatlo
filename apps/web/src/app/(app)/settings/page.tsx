@@ -1,10 +1,14 @@
 import type { Metadata } from "next";
 import { Card, DisabledButton, PageHeader, StatusPill } from "@/components/ui";
 import { PushSetup } from "@/components/PushSetup";
+import { readPublicConfig } from "@/lib/env";
 import { readSupabaseEnv } from "@/lib/supabase/env";
 import pkg from "../../../../package.json";
 
 export const metadata: Metadata = { title: "Configurações" };
+
+// Reads runtime configuration: must be rendered per request, not at build time.
+export const dynamic = "force-dynamic";
 
 export default function SettingsPage() {
   const supabaseConfigured = readSupabaseEnv() !== null;
@@ -15,7 +19,7 @@ export default function SettingsPage() {
 
       <div className="grid gap-4">
         <Card title="Notificações">
-          <PushSetup />
+          <PushSetup config={readPublicConfig()} />
         </Card>
 
         <Card title="Integrações" aside={<StatusPill tone="neutral">Não configurado</StatusPill>}>

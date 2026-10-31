@@ -1,7 +1,8 @@
+import { firstRuntimeEnv } from "./runtime-env";
+
 /**
- * Public (browser-visible) runtime configuration. Only NEXT_PUBLIC_* variables are read here:
- * they are inlined at build time, so each one must be referenced literally.
- * Secrets (service/secret keys, VAPID private key) must never be read from this app.
+ * Public (browser-visible) configuration, read at RUNTIME on the server (see runtime-env.ts) and passed to client
+ * components as props. Secrets (service/secret keys, VAPID private key) must never be read from this app.
  */
 export interface PublicConfig {
   /** Real Web Push is only enabled when the backend (worker + subscription storage) exists. */
@@ -17,9 +18,10 @@ export function parsePublicConfig(raw: { pushEnabled?: string; vapidPublicKey?: 
   };
 }
 
+/** Server-only. Accepts the NEXT_PUBLIC_* names already configured in EasyPanel and plain names. */
 export function readPublicConfig(): PublicConfig {
   return parsePublicConfig({
-    pushEnabled: process.env.NEXT_PUBLIC_PUSH_ENABLED,
-    vapidPublicKey: process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY,
+    pushEnabled: firstRuntimeEnv("NEXT_PUBLIC_PUSH_ENABLED", "PUSH_ENABLED"),
+    vapidPublicKey: firstRuntimeEnv("NEXT_PUBLIC_VAPID_PUBLIC_KEY", "VAPID_PUBLIC_KEY"),
   });
 }

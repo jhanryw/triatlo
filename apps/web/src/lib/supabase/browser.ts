@@ -1,12 +1,11 @@
 import { createBrowserClient } from "@supabase/ssr";
-import { SupabaseNotConfiguredError, readSupabaseEnv } from "./env";
+import type { SupabasePublicEnv } from "./env";
 
 /**
- * Browser client. Uses only the PUBLIC publishable key; access control is enforced by RLS
- * (Delivery 2). Never import a privileged key here.
+ * Browser client. Uses only the PUBLIC publishable key; access control is enforced by RLS.
+ * The configuration is passed in by a server component (read at runtime), never embedded at build time.
+ * Never import a privileged key here.
  */
-export function createBrowserSupabaseClient() {
-  const env = readSupabaseEnv();
-  if (!env) throw new SupabaseNotConfiguredError();
+export function createBrowserSupabaseClient(env: SupabasePublicEnv) {
   return createBrowserClient(env.url, env.publishableKey);
 }

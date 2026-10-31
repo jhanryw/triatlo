@@ -61,6 +61,9 @@
 | P-25 | Segredos do Supabase gerados localmente pelos scripts oficiais e mantidos **fora do repositório** (`~/.triatlo-secrets/supabase.env`, modo 600); colados no `.env` do serviço no EasyPanel; valores nunca impressos | Gerar no servidor | Cópia única: guardar em cofre de senhas |
 | P-26 | Auth de uso pessoal: `DISABLE_SIGNUP=true` **desde o primeiro boot**; conta única criada pela API administrativa (`create-admin-user.sh`); telefone, anônimos e provedores sociais desligados; sem SMTP até Q-05 | Habilitar cadastro e desligar depois | Evita janela com cadastro aberto |
 | P-27 | Stack Supabase adaptada mantida no repositório (`infra/supabase`), com cópia intocada do upstream, `CHANGES-vs-upstream.diff` e `npm run supabase:check` no CI; atualizações só manuais e com backup restaurável | Compose inline no EasyPanel | EasyPanel precisa dos arquivos de `volumes/` no checkout Git |
+| P-29 | Escala dos escores de check-in (sono, fadiga, disposição, humor, recuperação): inteiro **1–5**, sem interpretação clínica; qualidade do check-in derivada (coluna gerada) | Escala 0–10, 1–7 | Escolha de produto **não aprovada**; implementada para destravar o MVP e fácil de mudar por nova migration |
+| P-30 | Configuração pública (Supabase, push) lida **em runtime** no servidor e passada por props aos clientes, aceitando `NEXT_PUBLIC_*` e nomes simples; `/api/health` com booleanos e `/api/health/supabase` para diagnóstico; recusa de chave privilegiada em variável pública | Depender de build args do EasyPanel | Motivo: o build de produção saiu sem a configuração (ver PRODUCTION_VALIDATION.md) |
+| P-31 | Runner de migrations próprio (`supabase/migrate.sh`: transação por arquivo, checksum, recusa de statements destrutivos sem `-- allow-destructive`), aplicável por `--container` no servidor. **Resolve P-07** | Supabase CLI | Sem dependência nova; testado em Postgres descartável e no CI |
 | P-28 | Backup: serviço `backup` no compose (dump `-Fc`, roles, tar do Storage, sha256, retenção 14 dias, 06:00 UTC); **cópia externa pendente (Q-03)**; restauração a **ensaiar** | Backup de volume do EasyPanel | Não declarar backup externo enquanto Q-03 estiver aberto |
 
 ## C. HIPÓTESES a validar
@@ -95,6 +98,8 @@
 | ~~Q-15~~ | ~~Conta pessoal ou organização~~ — **resolvida**: conta pessoal `jhanryw`. O CI passou a usar a imagem oficial do gitleaks (não exige licença) | — |
 | Q-16 | Aprovação formal de P-02 (Node 24), P-17, P-19…P-28 | Entrega 2 |
 | ~~Q-17~~ | ~~Repositório público vs. privado~~ — **resolvida por A-23**: permanece público por decisão do proprietário | — |
+| Q-19 | 🔴 **Supabase em produção usa o `JWT_SECRET` padrão público e não é a stack do repositório** (Kong; aceita a chave anon de demonstração). Parar o serviço e substituí-lo (ver `docs/PRODUCTION_VALIDATION.md`) | Qualquer uso de dados reais |
+| Q-20 | Confirmar a aprovação da escala 1–5 (P-29) e do restante P-30/P-31 | Etapa 4 (UI persistente) |
 | Q-18 | Confirmações na tela do EasyPanel (⚠️ em `docs/SUPABASE_EASYPANEL.md`): Compose via Git com `./volumes`, domínio gerado para Compose, domínios com caminho, versão do Docker Compose | Deploy do Supabase |
 
 ## F. Registro do primeiro CI (2026-10-31)

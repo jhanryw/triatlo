@@ -61,6 +61,31 @@ jobs:
             "git config --global --add safe.directory /repo && gitleaks git /repo --redact --no-banner --exit-code 0 --report-format json --report-path /repo/gitleaks-report.json"
           node scripts/gitleaks-annotations.mjs gitleaks-report.json
 
+  database:
+    name: Migrations and RLS tests (Supabase Postgres image)
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: supabase/postgres:17.6.1.136
+        env:
+          # Throw-away database that lives only for this job; the password is the commit hash (unique per run, not a secret).
+          POSTGRES_PASSWORD: ${{ github.sha }}
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -h localhost"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 30
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Apply migrations (twice: must be idempotent) and run SQL tests
+        env:
+          DATABASE_URL: postgresql://supabase_admin:${{ github.sha }}@localhost:5432/postgres
+        run: bash supabase/tests/run.sh
+
   docker:
     name: Docker build and smoke test
     needs: quality
