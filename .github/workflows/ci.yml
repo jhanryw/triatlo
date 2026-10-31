@@ -53,11 +53,13 @@ jobs:
       - run: npm ci
       # Production dependencies must have no high/critical advisories.
       - run: npm audit --omit=dev --audit-level=high
-      # Secret scanning over the full git history. Organization-owned repositories need a GITLEAKS_LICENSE secret.
-      - uses: gitleaks/gitleaks-action@e0c47f4f8be36e29cdc102c57e68cb5cbf0e8d1e # v3.0.0
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          GITLEAKS_LICENSE: ${{ secrets.GITLEAKS_LICENSE }}
+      # Secret scanning over the full git history with the official gitleaks image (pinned tag). Findings are redacted
+      # and emitted as annotations (file, line, rule) so they are readable without the job log.
+      - name: Secret scan (gitleaks, full history, redacted)
+        run: |
+          docker run --rm -v "$PWD:/repo" --entrypoint /bin/sh zricethezav/gitleaks:v8.30.1 -c \
+            "git config --global --add safe.directory /repo && gitleaks git /repo --redact --no-banner --exit-code 0 --report-format json --report-path /repo/gitleaks-report.json"
+          node scripts/gitleaks-annotations.mjs gitleaks-report.json
 
   docker:
     name: Docker build and smoke test

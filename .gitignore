@@ -66,3 +66,4 @@ imports/
 # Estado local de ferramentas
 .claude/settings.local.json
 .claude/worktrees/
+gitleaks-report.json
