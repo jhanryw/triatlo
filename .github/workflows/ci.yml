@@ -81,7 +81,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-      - name: Apply migrations (twice: must be idempotent) and run SQL tests
+      - name: "Apply migrations (twice - must be idempotent) and run SQL tests"
         env:
           DATABASE_URL: postgresql://supabase_admin:${{ github.sha }}@localhost:5432/postgres
         run: bash supabase/tests/run.sh
