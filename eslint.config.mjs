@@ -10,6 +10,7 @@ export default tseslint.config(
       "**/dist/**",
       "**/coverage/**",
       "apps/web/**",
+      "infra/supabase/**", // vendored upstream (Deno edge functions, shell, config)
       "scripts/**/*.generated.*",
     ],
   },

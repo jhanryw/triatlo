@@ -55,6 +55,12 @@
 | P-20 | Governança do motor no código (`packages/domain`): padrão seguro `autoApplyEnabled=false` e `approvedLimitsVersion=null`; aumentos/estruturais **sempre** aguardam o usuário; aplicação automática exige flag + limites aprovados + veredito de guardrail; nenhum número esportivo no código | — | **Implementada** como contrato e testes; não contém lógica clínica/fisiológica |
 | P-21 | Web Push na Entrega 1: arquitetura e UI prontas, **inativas** (`NEXT_PUBLIC_PUSH_ENABLED=false` por padrão; `/api/push/subscribe` responde 501) | Ativar já | Coerente com "não ativar notificações reais sem backend" |
 | P-22 | GitHub Actions fixadas por SHA de commit (tag no comentário) | Tags de versão | Mitiga comprometimento de actions de terceiros. SHAs resolvidos pela API do GitHub em 2026-10-31 |
+| P-23 | **Worker → banco pela API HTTPS do Supabase com `SUPABASE_SECRET_KEY`** (funções SQL restritas a `service_role`), sem publicar PostgreSQL. **Revisa P-08** (conexão Postgres direta) porque o worker é outro serviço do EasyPanel e a porta do banco não é publicada | Conexão direta `db:5432` se o EasyPanel permitir DNS entre serviços (⚠️ não verificado) | Decidir na Etapa 3 após testar a rede |
+| P-24 | Exposição pública do Supabase **somente** por três prefixos no mesmo host gerado: `/auth/v1`, `/rest/v1`, `/storage/v1` (domínios do EasyPanel com caminho). Studio, postgres-meta, Realtime, Functions, pooler e PostgreSQL sem rota pública | Domínio único `/` (Studio atrás do Basic Auth do gateway) | ⚠️ semântica de caminho do EasyPanel a confirmar; `smoke-test.sh` valida |
+| P-25 | Segredos do Supabase gerados localmente pelos scripts oficiais e mantidos **fora do repositório** (`~/.triatlo-secrets/supabase.env`, modo 600); colados no `.env` do serviço no EasyPanel; valores nunca impressos | Gerar no servidor | Cópia única: guardar em cofre de senhas |
+| P-26 | Auth de uso pessoal: `DISABLE_SIGNUP=true` **desde o primeiro boot**; conta única criada pela API administrativa (`create-admin-user.sh`); telefone, anônimos e provedores sociais desligados; sem SMTP até Q-05 | Habilitar cadastro e desligar depois | Evita janela com cadastro aberto |
+| P-27 | Stack Supabase adaptada mantida no repositório (`infra/supabase`), com cópia intocada do upstream, `CHANGES-vs-upstream.diff` e `npm run supabase:check` no CI; atualizações só manuais e com backup restaurável | Compose inline no EasyPanel | EasyPanel precisa dos arquivos de `volumes/` no checkout Git |
+| P-28 | Backup: serviço `backup` no compose (dump `-Fc`, roles, tar do Storage, sha256, retenção 14 dias, 06:00 UTC); **cópia externa pendente (Q-03)**; restauração a **ensaiar** | Backup de volume do EasyPanel | Não declarar backup externo enquanto Q-03 estiver aberto |
 
 ## C. HIPÓTESES a validar
 
@@ -86,7 +92,9 @@
 | Q-13 | Existe acompanhamento profissional (médico/nutricionista/treinador) cujas orientações devam entrar como restrições? | Entrega 6 |
 | Q-14 | Autorização para criar o repositório remoto privado no GitHub e fazer o primeiro push (e para o primeiro commit local, se desejado) | Execução do CI |
 | Q-15 | Conta pessoal ou organização no GitHub? Em organização, o `gitleaks-action` exige a secret `GITLEAKS_LICENSE` | Job `security` do CI |
-| Q-16 | Aprovação formal de P-02 (Node 24), P-17, P-19…P-22 | Entrega 2 |
+| Q-16 | Aprovação formal de P-02 (Node 24), P-17, P-19…P-28 | Entrega 2 |
+| Q-17 | **Repositório `jhanryw/triatlo` está PÚBLICO** (verificado em 2026-10-31 pela API do GitHub, `private: false`); o requisito é privado. Torná-lo privado antes do primeiro push | Push do commit `32bc23b` e deploy |
+| Q-18 | Confirmações na tela do EasyPanel (⚠️ em `docs/SUPABASE_EASYPANEL.md`): Compose via Git com `./volumes`, domínio gerado para Compose, domínios com caminho, versão do Docker Compose | Deploy do Supabase |
 
 ## E. Registro de bloqueios técnicos conhecidos
 

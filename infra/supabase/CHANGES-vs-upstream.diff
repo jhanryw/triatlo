@@ -1,0 +1,230 @@
+--- upstream/docker-compose.upstream.yml	2026-10-31 18:22:18
++++ docker-compose.yml	2026-10-31 18:24:45
+@@ -1,4 +1,10 @@
+-# Usage
++# TRIATLO INTELIGENTE — adapted for an EasyPanel *Compose* service (Git source, build path /infra/supabase).
++# Upstream: supabase/supabase @ self-hosted/v0.8.3 (docker/docker-compose.yml). See UPSTREAM.md and
++# CHANGES-vs-upstream.diff for every deviation. Image tags are the upstream pinned tags (unchanged).
++# Deviations: unique project name; no container_name; no published host ports (EasyPanel proxy routes by domain);
++# named volumes for persistent data; realtime tenant hostname kept through a network alias; backup sidecar added.
++#
++# Usage (upstream text kept for reference)
+ #   Start:              docker compose up -d
+ #   Stop:               docker compose down
+ #   Dev mode:           docker compose -f docker-compose.yml -f ./dev/docker-compose.dev.yml up -d
+@@ -8,12 +14,11 @@
+ #   - Nested variable interpolation (${A:-${B}}) requires podman-compose >= 1.6.0
+ #
+ 
+-name: supabase
++name: triatlo-supabase
+ 
+ services:
+ 
+   studio:
+-    container_name: supabase-studio
+     image: supabase/studio:2026.10.12-sha-3699278
+     restart: unless-stopped
+     healthcheck:
+@@ -62,13 +67,12 @@
+       SNIPPETS_MANAGEMENT_FOLDER: /app/snippets
+       EDGE_FUNCTIONS_MANAGEMENT_FOLDER: /app/edge-functions
+     volumes:
+-      - ./volumes/snippets:/app/snippets:z
++      - studio-snippets:/app/snippets
+       - ./volumes/functions:/app/edge-functions:ro,z
+ 
+   # Envoy is the default API gateway
+   # See: https://github.com/orgs/supabase/discussions/48048
+   api-gw:
+-    container_name: supabase-envoy
+     image: envoyproxy/envoy:v1.39.1
+     restart: unless-stopped
+     networks:
+@@ -87,8 +91,7 @@
+     depends_on:
+       studio:
+         condition: service_healthy
+-    ports:
+-      - ${API_GW_HTTP_PORT:-${KONG_HTTP_PORT:-8000}}:8000/tcp
++    # No published host port: EasyPanel's proxy routes the generated HTTPS domain to api-gw:8000.
+     volumes:
+       - ./volumes/api/envoy/envoy.yaml:/etc/envoy/envoy.yaml:ro
+       - ./volumes/api/envoy/cds.yaml:/etc/envoy/cds.yaml:ro
+@@ -107,7 +110,6 @@
+     entrypoint: ["/bin/sh", "/docker-entrypoint.sh"]
+ 
+   auth:
+-    container_name: supabase-auth
+     image: supabase/gotrue:v2.197.0
+     restart: unless-stopped
+     healthcheck:
+@@ -149,7 +151,7 @@
+ 
+       # JSON array of signing JWKs (EC private + legacy symmetric)
+       # For Podman, use: GOTRUE_JWT_KEYS: ${JWT_KEYS}
+-      #GOTRUE_JWT_KEYS: ${JWT_KEYS:-[]}
++      GOTRUE_JWT_KEYS: ${JWT_KEYS:-[]}
+ 
+       GOTRUE_JWT_ISSUER: ${API_EXTERNAL_URL}
+ 
+@@ -247,7 +249,6 @@
+       # GOTRUE_HOOK_SEND_EMAIL_SECRETS: "v1,whsec_VGhpcyBpcyBhbiBleGFtcGxlIG9mIGEgc2hvcnRlciBCYXNlNjQgc3RyaW5n"
+ 
+   rest:
+-    container_name: supabase-rest
+     image: postgrest/postgrest:v14.18
+     restart: unless-stopped
+     depends_on:
+@@ -282,8 +283,12 @@
+       ]
+ 
+   realtime:
+-    # This container name looks inconsistent but is correct because realtime constructs tenant id by parsing the subdomain
+-    container_name: realtime-dev.supabase-realtime
++    # Upstream sets container_name realtime-dev.supabase-realtime because Realtime derives its tenant id from the
++    # hostname the gateway uses. A network alias keeps that hostname without a global container name.
++    networks:
++      default:
++        aliases:
++          - realtime-dev.supabase-realtime
+     image: supabase/realtime:v2.143.3
+     restart: unless-stopped
+     depends_on:
+@@ -315,7 +320,7 @@
+ 
+       # JWKS for token verification (EC public + legacy symmetric).
+       # For Podman, use: API_JWT_JWKS: ${JWT_JWKS}
+-      #API_JWT_JWKS: ${JWT_JWKS:-{"keys":[]}}
++      API_JWT_JWKS: ${JWT_JWKS:-{"keys":[]}}
+ 
+       SECRET_KEY_BASE: ${SECRET_KEY_BASE}
+       METRICS_JWT_SECRET: ${JWT_SECRET}
+@@ -329,7 +334,6 @@
+ 
+   # To use S3 backed storage: docker compose -f docker-compose.yml -f docker-compose.s3.yml up
+   storage:
+-    container_name: supabase-storage
+     image: supabase/storage-api:v1.81.0
+     restart: unless-stopped
+     depends_on:
+@@ -364,7 +368,7 @@
+ 
+       # JWKS for token verification (EC public + legacy symmetric).
+       # For Podman, use: JWT_JWKS: ${JWT_JWKS}
+-      #JWT_JWKS: ${JWT_JWKS:-{"keys":[]}}
++      JWT_JWKS: ${JWT_JWKS:-{"keys":[]}}
+ 
+       DATABASE_URL: postgres://supabase_storage_admin:${POSTGRES_PASSWORD}@${POSTGRES_HOST}:${POSTGRES_PORT}/${POSTGRES_DB}
+       STORAGE_PUBLIC_URL: ${SUPABASE_PUBLIC_URL}
+@@ -389,14 +393,13 @@
+       S3_PROTOCOL_ACCESS_KEY_ID: ${S3_PROTOCOL_ACCESS_KEY_ID}
+       S3_PROTOCOL_ACCESS_KEY_SECRET: ${S3_PROTOCOL_ACCESS_KEY_SECRET}
+     volumes:
+-      - ./volumes/storage:/var/lib/storage:z
++      - storage-data:/var/lib/storage
+ 
+   imgproxy:
+-    container_name: supabase-imgproxy
+     image: darthsim/imgproxy:v3.31.4
+     restart: unless-stopped
+     volumes:
+-      - ./volumes/storage:/var/lib/storage:z
++      - storage-data:/var/lib/storage
+     healthcheck:
+       test:
+         [
+@@ -415,7 +418,6 @@
+       IMGPROXY_MAX_SRC_RESOLUTION: 16.8
+ 
+   meta:
+-    container_name: supabase-meta
+     image: supabase/postgres-meta:v0.100.0
+     restart: unless-stopped
+     depends_on:
+@@ -432,7 +434,6 @@
+       CRYPTO_KEY: ${PG_META_CRYPTO_KEY}
+ 
+   functions:
+-    container_name: supabase-edge-functions
+     image: supabase/edge-runtime:v1.77.4
+     restart: unless-stopped
+     volumes:
+@@ -451,7 +452,7 @@
+       JWT_SECRET: ${JWT_SECRET}
+       # JWKS for token verification (EC public + legacy symmetric).
+       # For Podman, use: SUPABASE_JWKS: ${JWT_JWKS}
+-      #SUPABASE_JWKS: ${JWT_JWKS:-{"keys":[]}}
++      SUPABASE_JWKS: ${JWT_JWKS:-{"keys":[]}}
+ 
+       SUPABASE_URL: http://api-gw:8000
+       SUPABASE_PUBLIC_URL: ${SUPABASE_PUBLIC_URL}
+@@ -475,7 +476,6 @@
+ 
+   # Comment out everything below this point if you are using an external Postgres database
+   db:
+-    container_name: supabase-db
+     # To upgrade an existing Postgres 15 database in place, see utils/upgrade-pg17.sh.
+     image: supabase/postgres:17.6.1.136
+     restart: unless-stopped
+@@ -487,8 +487,8 @@
+       - ./volumes/db/roles.sql:/docker-entrypoint-initdb.d/init-scripts/99-roles.sql:Z
+       # Initialize the database settings with JWT_EXP
+       - ./volumes/db/jwt.sql:/docker-entrypoint-initdb.d/init-scripts/99-jwt.sql:Z
+-      # PGDATA directory is persisted between restarts
+-      - ./volumes/db/data:/var/lib/postgresql/data:Z
++      # PGDATA directory is persisted between restarts (named volume db-data, see bottom)
++      - db-data:/var/lib/postgresql/data
+       # Changes required for internal supabase data such as _analytics
+       - ./volumes/db/_supabase.sql:/docker-entrypoint-initdb.d/migrations/97-_supabase.sql:Z
+       # Changes required for Analytics support
+@@ -530,12 +530,10 @@
+ 
+   # Update the DATABASE_URL if you are using an external Postgres database
+   supavisor:
+-    container_name: supabase-pooler
+     image: supabase/supavisor:2.9.13
+     restart: unless-stopped
+-    ports:
+-      - ${POSTGRES_PORT}:5432
+-      - ${POOLER_PROXY_PORT_TRANSACTION}:6543
++    # No published ports: PostgreSQL / pooler must never be reachable from the Internet.
++    # Services reach them inside the Docker network (db:5432, supavisor:5432/6543).
+     volumes:
+       - ./volumes/pooler/pooler.exs:/etc/pooler/pooler.exs:ro,z
+     healthcheck:
+@@ -582,6 +580,34 @@
+         "/app/bin/migrate && /app/bin/supavisor eval \"$$(cat /etc/pooler/pooler.exs)\" && /app/bin/server"
+       ]
+ 
++  # Triatlo addition: scheduled logical backups (see docs/SUPABASE_EASYPANEL.md §7 and infra/backup/).
++  # Dumps land in the db-backups volume; copying that volume OFF the server is a separate, required step.
++  backup:
++    image: supabase/postgres:17.6.1.136
++    restart: unless-stopped
++    depends_on:
++      db:
++        condition: service_healthy
++    volumes:
++      - ./backup/backup.sh:/backup.sh:ro
++      - storage-data:/var/lib/storage:ro
++      - db-backups:/backups
++    environment:
++      PGHOST: db
++      PGPORT: ${POSTGRES_PORT}
++      PGDATABASE: ${POSTGRES_DB}
++      PGUSER: supabase_admin
++      PGPASSWORD: ${POSTGRES_PASSWORD}
++      BACKUP_DIR: /backups
++      BACKUP_HOUR_UTC: ${BACKUP_HOUR_UTC:-6}
++      BACKUP_RETENTION_DAYS: ${BACKUP_RETENTION_DAYS:-14}
++      BACKUP_ENCRYPTION_PASSPHRASE: ${BACKUP_ENCRYPTION_PASSPHRASE:-}
++    entrypoint: ["/bin/bash", "/backup.sh"]
++
+ volumes:
+   db-config:
+   deno-cache:
++  db-data:
++  storage-data:
++  studio-snippets:
++  db-backups:

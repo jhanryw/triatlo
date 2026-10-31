@@ -36,6 +36,7 @@ jobs:
       - run: npm run build
       # After the build so browser bundles are scanned for privileged credential names.
       - run: npm run security:check
+      - run: npm run supabase:check
 
   security:
     name: Dependency audit and secret scan

@@ -28,8 +28,12 @@ const SECRET_VALUE = [
   { re: /\bsb_secret_[A-Za-z0-9_-]{16,}/, why: "Supabase secret key" },
   { re: /\bsk-[A-Za-z0-9_-]{24,}/, why: "AI provider API key" },
   { re: /VAPID_PRIVATE_KEY\s*=\s*[A-Za-z0-9_-]{20,}/, why: "VAPID private key value" },
-  { re: /(?:POSTGRES_PASSWORD|DASHBOARD_PASSWORD)\s*=\s*(?!your-|change|<|\s*$)\S{8,}/, why: "database/dashboard password value" },
+  { re: /(?:POSTGRES_PASSWORD|DASHBOARD_PASSWORD)[ \t]*=[ \t]*(?!your-|change|<|\$|[ \t]*$)\S{8,}/m, why: "database/dashboard password value" },
 ];
+
+// Vendored, unmodified upstream material (see infra/supabase/UPSTREAM.md): shell templates mention variable
+// names next to shell expressions, which the value patterns cannot tell apart from real values.
+const SKIP_VALUE_SCAN = /^infra\/supabase\/(utils|upstream)\//;
 
 const PRIVILEGED_NAMES = /SUPABASE_SECRET_KEY|SERVICE_ROLE|service_role|VAPID_PRIVATE_KEY|sb_secret_/;
 
@@ -78,8 +82,10 @@ for (const file of files) {
   const full = join(root, file);
   if (statSync(full).size > MAX_BYTES) continue;
   const text = readFileSync(full, "utf8");
-  for (const rule of SECRET_VALUE) {
-    if (rule.re.test(text)) problems.push(`${file}: looks like a ${rule.why}`);
+  if (!SKIP_VALUE_SCAN.test(file)) {
+    for (const rule of SECRET_VALUE) {
+      if (rule.re.test(text)) problems.push(`${file}: looks like a ${rule.why}`);
+    }
   }
   if (/^apps\/web\/src\//.test(file) && PRIVILEGED_NAMES.test(text)) {
     problems.push(`${file}: the web app must never reference privileged credentials`);

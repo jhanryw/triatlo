@@ -1,6 +1,6 @@
 # DEPLOYMENT — GitHub → CI → EasyPanel
 
-> Estado: **documentado, ainda não executado.** Não há repositório remoto, servidor validado nem Supabase instalado (A-20, A-21). Nada aqui foi feito em produção. Pendências: Q-01, Q-02, Q-04, Q-14, Q-15.
+> Estado: **documentado, ainda não executado.** O Supabase dedicado e a conexão do app estão em [SUPABASE_EASYPANEL.md](SUPABASE_EASYPANEL.md). Não há repositório remoto, servidor validado nem Supabase instalado (A-20, A-21). Nada aqui foi feito em produção. Pendências: Q-01, Q-02, Q-04, Q-14, Q-15.
 
 ## 1. Visão
 
