@@ -1,0 +1,11 @@
+# gitleaks configuration (default rules + narrow, documented exceptions).
+[extend]
+useDefault = true
+
+# False positive confirmed by inspection: a table row in the decision log mentions the helper script
+# "create-admin-user.sh" next to the word "admin"; there is no credential in the line (commit fb047be, line 61).
+# Scoped to one file AND one rule so every other file and rule stay fully scanned.
+[[allowlists]]
+description = "Prose in docs/DECISIONS.md flagged as generic-api-key (no credential present)"
+targetRules = ["generic-api-key"]
+paths = ['''docs/DECISIONS\.md''']
