@@ -1,0 +1,23 @@
+{
+  "name": "@triatlo/shared",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Shared contracts (schemas and types). No business rules, no I/O.",
+  "exports": {
+    ".": {
+      "types": "./src/index.ts",
+      "default": "./src/index.ts"
+    }
+  },
+  "scripts": {
+    "typecheck": "tsc -p tsconfig.json",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "zod": "4.6.7"
+  },
+  "devDependencies": {
+    "vitest": "5.0.5"
+  }
+}

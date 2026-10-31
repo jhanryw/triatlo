@@ -1,0 +1,72 @@
+@import "tailwindcss";
+
+/* Design tokens. Calm, minimal palette; dark mode follows the device. */
+:root {
+  --background: #f7f8fa;
+  --foreground: #0f172a;
+  --surface: #ffffff;
+  --surface-muted: #f1f5f9;
+  --border: #e2e8f0;
+  --muted: #64748b;
+  --accent: #0f766e;
+  --accent-foreground: #ffffff;
+  --accent-soft: #ccfbf1;
+  --demo: #b45309;
+  --demo-soft: #fef3c7;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: #0b1020;
+    --foreground: #e6eaf2;
+    --surface: #131a2e;
+    --surface-muted: #1a2340;
+    --border: #243049;
+    --muted: #94a3b8;
+    --accent: #2dd4bf;
+    --accent-foreground: #04201d;
+    --accent-soft: #0f2f2c;
+    --demo: #fbbf24;
+    --demo-soft: #2b2208;
+  }
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-surface: var(--surface);
+  --color-surface-muted: var(--surface-muted);
+  --color-border: var(--border);
+  --color-muted: var(--muted);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-accent-soft: var(--accent-soft);
+  --color-demo: var(--demo);
+  --color-demo-soft: var(--demo-soft);
+  --font-sans: ui-sans-serif, system-ui, -apple-system, "SF Pro Text", "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  /* Avoid rubber-band flashes and accidental text selection on tap in the installed app. */
+  overscroll-behavior-y: none;
+}
+
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}

@@ -1,0 +1,113 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+# Third-party actions are pinned to commit SHAs (tag in the trailing comment).
+jobs:
+  quality:
+    name: Lint, types, tests, build (Node ${{ matrix.node }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        node: [22, 24]
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: ${{ matrix.node }}
+          cache: npm
+      - run: npm ci
+      - run: npm run lint
+      - run: npm run typecheck
+      - run: npm test
+      - run: npm run build
+      # After the build so browser bundles are scanned for privileged credential names.
+      - run: npm run security:check
+
+  security:
+    name: Dependency audit and secret scan
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      # Production dependencies must have no high/critical advisories.
+      - run: npm audit --omit=dev --audit-level=high
+      # Secret scanning over the full git history. Organization-owned repositories need a GITLEAKS_LICENSE secret.
+      - uses: gitleaks/gitleaks-action@e0c47f4f8be36e29cdc102c57e68cb5cbf0e8d1e # v3.0.0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITLEAKS_LICENSE: ${{ secrets.GITLEAKS_LICENSE }}
+
+  docker:
+    name: Docker build and smoke test
+    needs: quality
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
+
+      - name: Build web image
+        uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
+        with:
+          context: .
+          file: apps/web/Dockerfile
+          load: true
+          push: false
+          tags: triatlo-web:ci
+          build-args: |
+            APP_COMMIT_SHA=${{ github.sha }}
+          cache-from: type=gha,scope=web
+          cache-to: type=gha,scope=web,mode=max
+
+      - name: Build worker image
+        uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
+        with:
+          context: .
+          file: apps/worker/Dockerfile
+          load: true
+          push: false
+          tags: triatlo-worker:ci
+          build-args: |
+            APP_COMMIT_SHA=${{ github.sha }}
+          cache-from: type=gha,scope=worker
+          cache-to: type=gha,scope=worker,mode=max
+
+      - name: Smoke test web
+        run: |
+          docker run -d --name web -p 3000:3000 triatlo-web:ci
+          for i in $(seq 1 30); do curl -fsS http://127.0.0.1:3000/api/health && break; sleep 1; done
+          curl -fsS http://127.0.0.1:3000/api/health | grep '"status":"ok"'
+          curl -fsS http://127.0.0.1:3000/manifest.webmanifest | grep '"display":"standalone"'
+          curl -fsS -I http://127.0.0.1:3000/sw.js | grep -i 'cache-control: no-cache'
+          test "$(docker exec web id -u)" != "0"   # runs as non-root
+          docker logs web
+
+      - name: Smoke test worker
+        run: |
+          docker run -d --name worker -e WORKER_TICK_SECONDS=1 triatlo-worker:ci
+          for i in $(seq 1 30); do docker exec worker node -e "fetch('http://127.0.0.1:8081/healthz').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))" && break; sleep 1; done
+          docker exec worker node -e "fetch('http://127.0.0.1:8081/healthz').then(r=>r.text()).then(t=>{console.log(t);process.exit(t.includes('\"status\":\"ok\"')?0:1)})"
+          test "$(docker exec worker id -u)" != "0"
+          docker logs worker

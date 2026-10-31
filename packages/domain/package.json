@@ -1,0 +1,23 @@
+{
+  "name": "@triatlo/domain",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Pure, deterministic domain logic. No I/O. Time and ids are injected.",
+  "exports": {
+    ".": {
+      "types": "./src/index.ts",
+      "default": "./src/index.ts"
+    }
+  },
+  "scripts": {
+    "typecheck": "tsc -p tsconfig.json",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@triatlo/shared": "0.1.0"
+  },
+  "devDependencies": {
+    "vitest": "5.0.5"
+  }
+}

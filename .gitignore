@@ -1,0 +1,68 @@
+# Dependências e builds
+node_modules/
+.next/
+out/
+dist/
+build/
+coverage/
+*.tsbuildinfo
+.turbo/
+
+# Segredos e configuração local — NUNCA versionar
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+secrets/
+
+# Supabase local / dados e dumps
+supabase/.branches/
+supabase/.temp/
+supabase/volumes/
+*.dump
+*.sql.gz
+backups/
+
+# Dados pessoais / mídia de teste
+photos/
+uploads/
+exports/
+
+# Logs e sistema
+*.log
+npm-debug.log*
+.DS_Store
+.vscode/*
+!.vscode/settings.json
+.idea/
+
+# Next.js generated
+next-env.d.ts
+
+# Mais material secreto (chaves, certificados, credenciais de serviços)
+*.p12
+*.pfx
+*.jks
+id_rsa*
+id_ed25519*
+*credentials*.json
+*service-account*.json
+.npmrc.local
+.netrc
+
+# Dados de saúde e esportivos pessoais (exportações do Apple Health/Zepp, arquivos de atividade)
+*.fit
+*.gpx
+*.tcx
+apple_health_export/
+export.xml
+export.zip
+*.sqlite
+*.sqlite3
+data/
+imports/
+
+# Estado local de ferramentas
+.claude/settings.local.json
+.claude/worktrees/
