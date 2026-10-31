@@ -26,7 +26,8 @@
 | A-18 | Código, tabelas, APIs e nomes técnicos em **inglês**; interface e mensagens ao usuário em **pt-BR** (ex-P-13) | Mensagem de 2026-10-31 |
 | A-19 | Monorepo com `apps/web`, `apps/worker`, `packages/shared`, `packages/domain` (ex-P-01) | Mensagem de 2026-10-31 |
 | A-20 | Supabase self-hosted dedicado no EasyPanel, **sem instalar** até validar a capacidade do VPS | Mensagem de 2026-10-31 |
-| A-21 | Repositório privado no GitHub; **não criar repositório remoto nem fazer push sem autorização do usuário**; nada publicado no EasyPanel na Entrega 1 | Mensagem de 2026-10-31 |
+| A-21 | ~~Repositório privado~~ — **visibilidade revista por A-23**. Mantém-se: não fazer push sem autorização (concedida em 2026-10-31 para `main` do repositório abaixo, sem force push) | Mensagem de 2026-10-31 |
+| A-23 | O repositório https://github.com/jhanryw/triatlo.git **pode permanecer público** (decisão do proprietário, 2026-10-31). Consequências: nunca versionar segredos/dados pessoais (varredura obrigatória no CI); a configuração de infraestrutura fica pública (sem credenciais); o EasyPanel clona sem deploy key/token | Mensagem de 2026-10-31 |
 | A-22 | Versões fixadas e lockfile versionado | Mensagem de 2026-10-31 |
 
 ## B. PROPOSTAS (aguardam aprovação)
@@ -90,17 +91,27 @@
 | Q-11 | Limites de frequência de notificações (máx/dia, horários de silêncio) | Entrega 4 |
 | Q-12 | Política de retenção de dados e backups após exclusão | Entrega 2 |
 | Q-13 | Existe acompanhamento profissional (médico/nutricionista/treinador) cujas orientações devam entrar como restrições? | Entrega 6 |
-| Q-14 | Autorização para criar o repositório remoto privado no GitHub e fazer o primeiro push (e para o primeiro commit local, se desejado) | Execução do CI |
-| Q-15 | Conta pessoal ou organização no GitHub? Em organização, o `gitleaks-action` exige a secret `GITLEAKS_LICENSE` | Job `security` do CI |
+| ~~Q-14~~ | ~~Autorização para repositório remoto e primeiro push~~ — **resolvida** em 2026-10-31 (push de `main` autorizado; commits `32bc23b`, `fb047be`, `87c2a11`, `d00e8fc`) | — |
+| ~~Q-15~~ | ~~Conta pessoal ou organização~~ — **resolvida**: conta pessoal `jhanryw`. O CI passou a usar a imagem oficial do gitleaks (não exige licença) | — |
 | Q-16 | Aprovação formal de P-02 (Node 24), P-17, P-19…P-28 | Entrega 2 |
-| Q-17 | **Repositório `jhanryw/triatlo` está PÚBLICO** (verificado em 2026-10-31 pela API do GitHub, `private: false`); o requisito é privado. Torná-lo privado antes do primeiro push | Push do commit `32bc23b` e deploy |
+| ~~Q-17~~ | ~~Repositório público vs. privado~~ — **resolvida por A-23**: permanece público por decisão do proprietário | — |
 | Q-18 | Confirmações na tela do EasyPanel (⚠️ em `docs/SUPABASE_EASYPANEL.md`): Compose via Git com `./volumes`, domínio gerado para Compose, domínios com caminho, versão do Docker Compose | Deploy do Supabase |
+
+## F. Registro do primeiro CI (2026-10-31)
+
+| Run | Commit | Resultado | Observação |
+|---|---|---|---|
+| #1 | `fb047be` | falhou | `quality` (Node 22 e 24) e `docker` verdes; `gitleaks-action` retornou exit 1 e o log exige login |
+| #2 | `87c2a11` | falhou | gitleaks passou a rodar pela imagem oficial `zricethezav/gitleaks:v8.30.1` com achados redigidos como anotações: **1 achado** (`generic-api-key`, `docs/DECISIONS.md:61`) |
+| #3 | `d00e8fc` | **sucesso** | achado = falso positivo (texto com o nome de `create-admin-user.sh`); exceção restrita a um arquivo e uma regra em `.gitleaks.toml`. Jobs: `quality` (Node 22, 24), `security` (npm audit + gitleaks), `docker` (build + smoke test web/worker) |
+
+Nota: tentei executar o binário do gitleaks localmente para diagnosticar; o ambiente bloqueou a execução de código baixado e não contornei — o diagnóstico foi feito pelo próprio CI.
 
 ## E. Registro de bloqueios técnicos conhecidos
 
 - Sem API pública do Amazfit comprovada (INTEGRATIONS §1.2).
 - PWA sem acesso a HealthKit (INTEGRATIONS §2).
-- Docker ausente na máquina de desenvolvimento: Dockerfiles e workflow de CI **não foram executados** (A-17).
+- Docker ausente na máquina de desenvolvimento (A-17). **Atualização 2026-10-31:** o CI (GitHub Actions) executou com sucesso o build das imagens web/worker e os smoke tests (run #3, commit `d00e8fc`); o compose do Supabase continua **nunca executado**.
 - O navegador embutido do app de desenvolvimento bloqueia service workers (mesmo erro ao registrar uma URL que não é script) — o registro real do `sw.js` precisa ser conferido no Safari/Chrome; a lógica do worker está coberta por teste unitário.
 - Porta 3000 local ocupada por outro processo do usuário (pid 14448, não tocado); o preview usou 3100.
 - Template Supabase do EasyPanel possivelmente defasado (P-05).
