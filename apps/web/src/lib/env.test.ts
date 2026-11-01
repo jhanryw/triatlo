@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { parsePublicConfig } from "./env";
-import { classifyKey, parseSupabaseEnv } from "./supabase/env";
+import { classifyKey, inspectSupabaseEnv, parseSupabaseEnv } from "./supabase/env";
 
 describe("parsePublicConfig", () => {
   it("keeps push disabled unless explicitly enabled", () => {
@@ -47,5 +47,23 @@ describe("classifyKey / privileged keys in public settings", () => {
     expect(parseSupabaseEnv({ url, publishableKey: jwt("service_role") })).toBeNull();
     expect(parseSupabaseEnv({ url, publishableKey: jwt("anon") })).not.toBeNull();
     expect(parseSupabaseEnv({ url, publishableKey: "sb_publishable_abc" })).not.toBeNull();
+  });
+});
+
+describe("public demo keys are refused", () => {
+  // The demo anon key is PUBLIC (upstream .env.example); rebuilt here from its documented parts so no key is stored in the repo.
+  const b64 = (o: object) => Buffer.from(JSON.stringify(o)).toString("base64url");
+  const demoLike = `eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.${b64({ role: "anon", iss: "supabase-demo", iat: 1641769200, exp: 1799535600 })}.sig`;
+
+  it("only sees keys that are exactly the public demo ones as 'demo' (hash match), not look-alikes", () => {
+    expect(classifyKey(demoLike)).toBe("legacy_anon");
+  });
+
+  it("explains why a configuration was refused, without echoing values", () => {
+    const url = "https://api.example.com";
+    expect(inspectSupabaseEnv({})).toEqual({ env: null, problem: "missing" });
+    expect(inspectSupabaseEnv({ url: "nope", publishableKey: "k" }).problem).toBe("invalid_url");
+    expect(inspectSupabaseEnv({ url, publishableKey: "sb_secret_abc" }).problem).toBe("refused_privileged_key");
+    expect(inspectSupabaseEnv({ url, publishableKey: "sb_publishable_abc" })).toMatchObject({ problem: null });
   });
 });

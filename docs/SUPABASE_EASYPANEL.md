@@ -1,5 +1,7 @@
 # SUPABASE_EASYPANEL — Criar o Supabase dedicado e conectar o app
 
+> ⚠️ **SUPERADO pela decisão A-24 (2026-10-31):** mantemos a instalação existente (Kong). Este documento descreve a stack Envoy de referência (`infra/supabase`), **não implantada**. O roteiro vigente é [SUPABASE_EXISTING.md](SUPABASE_EXISTING.md).
+
 > Estado (2026-10-31): **preparado, NÃO implantado.** Nada foi aplicado ao EasyPanel, nenhum container foi criado ou reiniciado. Docker não existe na máquina de desenvolvimento, então o compose adaptado **nunca foi executado**: as verificações feitas são estruturais (`npm run supabase:check`). Itens marcados ⚠️ são suposições sobre o EasyPanel que só você consegue confirmar na tela dele; se algo divergir, pare e me diga o que a tela mostra.
 >
 > **Roteiro operacional resumido e ordenado (substituição, backup, migrations, testes): [SUPABASE_RUNBOOK.md](SUPABASE_RUNBOOK.md).**

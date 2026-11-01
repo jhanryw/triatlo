@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { classifyKey, readSupabaseEnv } from "@/lib/supabase/env";
+import { classifyKey, inspectRuntimeSupabaseEnv } from "@/lib/supabase/env";
 
 export const dynamic = "force-dynamic";
 
@@ -9,9 +9,10 @@ export const dynamic = "force-dynamic";
  */
 export async function GET() {
   const headers = { "Cache-Control": "no-store" };
-  const env = readSupabaseEnv();
+  const { env, problem } = inspectRuntimeSupabaseEnv();
   if (!env) {
-    return NextResponse.json({ configured: false, reachable: false, keyAccepted: false }, { headers });
+    // `problem` is a fixed vocabulary (missing, invalid_url, refused_demo_key, refused_privileged_key): never a value.
+    return NextResponse.json({ configured: false, reachable: false, keyAccepted: false, problem }, { headers });
   }
   try {
     const response = await fetch(`${env.url}/auth/v1/health`, {

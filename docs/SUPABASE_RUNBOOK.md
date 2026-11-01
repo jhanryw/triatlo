@@ -1,5 +1,7 @@
 # SUPABASE_RUNBOOK — substituir o Supabase e aplicar as migrations (passos operacionais)
 
+> ⚠️ **SUPERADO pela decisão A-24 (2026-10-31):** mantemos a instalação existente (Kong). Este documento descreve a stack Envoy de referência (`infra/supabase`), **não implantada**. O roteiro vigente é [SUPABASE_EXISTING.md](SUPABASE_EXISTING.md).
+
 > Estado em 2026-10-31: o Supabase publicado em `qarvon-supabase-triatlo…` ainda é o **template antigo (Kong) com o JWT padrão público**; nada foi substituído, nenhuma migration foi aplicada. Este roteiro só tem passos que dependem de você no EasyPanel/servidor. Eu não tenho acesso ao painel nem ao servidor: **nomes de containers só existem depois do deploy** — o `server-preflight.sh` os imprime; não os adivinhe.
 
 Convenções: `API` = `https://qarvon-supabase-triatlo.uxxkgy.easypanel.host` · `APP` = `https://qarvon-triatlo.uxxkgy.easypanel.host`. Nenhum passo reinicia ou remove serviços de outros projetos.

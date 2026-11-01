@@ -19,8 +19,7 @@ done
 case "$API" in https://*) ;; *) echo "api url must be https://" >&2; exit 2 ;; esac
 [ -f "$ENVF" ] || { echo "env file not found: $ENVF" >&2; exit 2; }
 SVC="$(grep '^SERVICE_ROLE_KEY=' "$ENVF" | head -n1 | cut -d= -f2-)"
-PUB="$(grep '^SUPABASE_PUBLISHABLE_KEY=' "$ENVF" | head -n1 | cut -d= -f2-)"
-[ -n "$SVC" ] && [ -n "$PUB" ] || { echo "keys missing in $ENVF" >&2; exit 2; }
+[ -n "$SVC" ] || { echo "SERVICE_ROLE_KEY missing in $ENVF" >&2; exit 2; }
 
 printf "Your e-mail: "; read -r EMAIL
 printf "Password (min 12 chars, hidden): "; stty -echo 2>/dev/null; read -r PASS; stty echo 2>/dev/null; echo

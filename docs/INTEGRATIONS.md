@@ -66,7 +66,18 @@ Interface `DataSource` em `packages/shared`: cada fonte (manual, arquivo, ponte 
 Ver ARCHITECTURE §5. Documentação para o usuário (a incluir no app): no iPhone é preciso **iOS ≥ 16.4**, adicionar o app à Tela de Início, abrir pelo ícone e tocar em "Ativar notificações"; Modos de Foco e economia de energia podem atrasar ou silenciar avisos.
 
 ## 5. Supabase
-Ver INFRASTRUCTURE.md. Sem integrações de terceiros além de SMTP (a definir), provedor de IA (futuro) e destino de backup.
+**Instalação existente (decisão A-24):** Kong 3.9.1 + GoTrue v2.186.0 + PostgREST 14.8 no EasyPanel; sem outra instância. Contrato com o app:
+
+| Aspecto | Valor |
+|---|---|
+| URL pública | `NEXT_PUBLIC_SUPABASE_URL` (ou `SUPABASE_URL`) = `https://qarvon-supabase-triatlo.uxxkgy.easypanel.host` |
+| Chave pública | **anon JWT legado** em `NEXT_PUBLIC_SUPABASE_ANON_KEY` (ou `SUPABASE_ANON_KEY`/`…PUBLISHABLE_KEY`); o Kong **não** aceita `sb_publishable_` |
+| Chaves recusadas pelo app | demonstração pública (hash SHA-256), `service_role`, `sb_secret_` |
+| Credencial privilegiada | `SERVICE_ROLE_KEY`: só scripts/worker no backend, nunca no `web` |
+| Rotas usadas | `/auth/v1`, `/rest/v1`, `/storage/v1` (bucket privado `meal-photos`) |
+| Diagnóstico | `/api/health` (booleanos) e `/api/health/supabase` (alcance, tipo de chave, problema) |
+
+Sem integrações de terceiros além de SMTP (a definir, Q-05), provedor de IA (futuro) e destino de backup (Q-03). Procedimentos: [SUPABASE_EXISTING.md](SUPABASE_EXISTING.md).
 
 ## 6. Estado após a Entrega 1
 Nenhuma integração foi implementada. Existem apenas contratos: `DataSource`/`NormalizedRecord` e `AiProvider`/`AiDisclosure` (`packages/shared`), a UI de Web Push inativa e o stub `POST /api/push/subscribe` (501). A tela Configurações → Integrações informa que o Amazfit "não está configurado" e que não há API pública comprovada.

@@ -105,6 +105,7 @@ Estratégia:
 
 Dockerfiles (`apps/web/Dockerfile`, `apps/worker/Dockerfile`), `.dockerignore` e o workflow `.github/workflows/ci.yml` foram escritos conforme §5, **sem execução** (sem Docker local, sem remoto GitHub). Passo a passo de deploy e verificação pós-deploy: [DEPLOYMENT.md](DEPLOYMENT.md). Supabase **não foi instalado** (A-20).
 
-## 9. Supabase para o EasyPanel (Entrega 2, preparado e não implantado)
+## 9. Supabase para o EasyPanel
+> **Atualização A-24 (2026-10-31):** a produção usa a **instalação existente (Kong)**; a stack Envoy descrita abaixo é só referência. Roteiro vigente: [SUPABASE_EXISTING.md](SUPABASE_EXISTING.md).
 
 A stack foi escolhida e adaptada (versão fixada `self-hosted/v0.8.3`, sem portas publicadas, volumes nomeados, backup). Procedimento exato, tabela de variáveis e verificações: [SUPABASE_EASYPANEL.md](SUPABASE_EASYPANEL.md). Esta seção substitui o que §3 dizia sobre rotas R1/R2: **a rota R1 (Compose por Git com o compose oficial atual) foi adotada**; a validação no servidor real continua pendente (Q-18).

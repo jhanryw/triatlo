@@ -4,21 +4,23 @@
 # It logs in with YOUR account (password typed hidden), writes ONE test check-in dated 2000-01-01 and one tiny test object,
 # and deletes both at the end. Nothing secret is printed.
 #
-#   bash infra/supabase/scripts/integration-test.sh --api-url https://<api-host> [--env FILE]
+#   bash infra/supabase/scripts/integration-test.sh --api-url https://<api-host> [--env FILE] [--key-var ANON_KEY]
+#   (--key-var ANON_KEY for the Kong-based installation: its public key is the legacy anon JWT)
 set -u
-API=""; ENVF="$HOME/.triatlo-secrets/supabase.env"
+API=""; ENVF="$HOME/.triatlo-secrets/supabase.env"; KEYVAR="SUPABASE_PUBLISHABLE_KEY"
 while [ $# -gt 0 ]; do
   case "$1" in
     --api-url) API="${2%/}"; shift 2 ;;
     --env) ENVF="$2"; shift 2 ;;
-    -h|--help) sed -n '2,10p' "$0"; exit 0 ;;
+    --key-var) KEYVAR="$2"; shift 2 ;;
+    -h|--help) sed -n '2,12p' "$0"; exit 0 ;;
     *) echo "unknown option: $1" >&2; exit 2 ;;
   esac
 done
 [ -n "$API" ] || { echo "--api-url is required" >&2; exit 2; }
 case "$API" in https://*) ;; *) echo "api url must be https://" >&2; exit 2 ;; esac
-PUB="$(grep '^SUPABASE_PUBLISHABLE_KEY=' "$ENVF" | head -n1 | cut -d= -f2-)"
-[ -n "$PUB" ] || { echo "publishable key missing in $ENVF" >&2; exit 2; }
+PUB="$(grep "^${KEYVAR}=" "$ENVF" | head -n1 | cut -d= -f2-)"
+[ -n "$PUB" ] || { echo "$KEYVAR missing in $ENVF" >&2; exit 2; }
 
 TMP="$(mktemp -d)"; chmod 700 "$TMP"
 FAILS=0; WARNS=0; TOKEN=""; UID_=""; CHECKIN_ID=""; OBJ=""

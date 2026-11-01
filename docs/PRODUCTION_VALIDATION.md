@@ -17,7 +17,7 @@
 | 8 | Volumes, isolamento, persistência, backup | ⏸ **Não verificáveis sem acesso ao servidor**, e sem sentido enquanto o item 3 existir |
 | 9 | Credenciais de demonstração do painel (`supabase` / senha padrão) | ✅ recusadas (401) — mas o JWT padrão continua valendo |
 
-> Roteiro ordenado e atualizado: [SUPABASE_RUNBOOK.md](SUPABASE_RUNBOOK.md). Reverificação em 2026-10-31 (mais tarde): **nada mudou** — gateway ainda Kong, chave demo ainda aceita, web ainda no build antigo.
+> Roteiro vigente (A-24, mantemos a instalação Kong): [SUPABASE_EXISTING.md](SUPABASE_EXISTING.md). O antigo [SUPABASE_RUNBOOK.md](SUPABASE_RUNBOOK.md) descreve a stack Envoy de referência. Reverificação em 2026-10-31 (mais tarde): **nada mudou** — gateway ainda Kong, chave demo ainda aceita, web ainda no build antigo.
 
 ## Ações imediatas (suas — exigem o EasyPanel)
 

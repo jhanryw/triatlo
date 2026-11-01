@@ -10,6 +10,7 @@
 #
 # No secret value is ever printed. Requires: openssl, node >= 16 (or docker), sed.
 set -eu
+umask 077   # every file this script writes (including the --urls-only rewrite) stays private
 
 HERE="$(cd "$(dirname "$0")/.." && pwd)"
 OUT="${HOME}/.triatlo-secrets/supabase.env"

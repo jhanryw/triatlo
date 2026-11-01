@@ -35,9 +35,13 @@ const SECRET_VALUE = [
 // names next to shell expressions, which the value patterns cannot tell apart from real values.
 const SKIP_VALUE_SCAN = /^infra\/supabase\/(utils|upstream)\//;
 
-// These two files only NAME privileged credentials in order to REFUSE them (classifyKey). Server-side, never bundled for
+// These files only NAME privileged credentials in order to REFUSE them (classifyKey). Server-side, never bundled for
 // the browser: the .next/static scan below still fails if a privileged name ever reaches a client chunk.
-const ALLOWED_PRIVILEGED_MENTIONS = new Set(["apps/web/src/lib/supabase/env.ts", "apps/web/src/lib/env.test.ts"]);
+const ALLOWED_PRIVILEGED_MENTIONS = new Set([
+  "apps/web/src/lib/supabase/env.ts",
+  "apps/web/src/lib/env.test.ts",
+  "apps/web/src/app/api/health/supabase/route.test.ts",
+]);
 
 const PRIVILEGED_NAMES = /SUPABASE_SECRET_KEY|SERVICE_ROLE|service_role|VAPID_PRIVATE_KEY|sb_secret_/;
 

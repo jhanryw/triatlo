@@ -76,6 +76,8 @@ Processo Node único (uma réplica) com três responsabilidades:
 Conexão: Postgres direto pela rede interna (credencial de papel dedicado, não a chave pública) ou API com chave secreta do Supabase; escolha **[PENDENTE]** (P-08). A chave privilegiada **nunca** vai ao frontend nem ao repositório.
 
 ### 3.3 Supabase self-hosted
+> **Atualização (A-24, 2026-10-31):** em produção usamos a **instalação existente baseada em Kong** (não a stack Envoy de `infra/supabase`, que ficou como referência). Ver §12.
+
 Ver [INFRASTRUCTURE.md](INFRASTRUCTURE.md). Resumo: stack oficial em Docker ✅ (Studio, gateway Envoy por padrão com Kong opcional, Auth, PostgREST, Realtime, Storage, imgproxy, postgres-meta, Edge Runtime, Postgres + Supavisor; Logflare/Vector opcionais). Mínimo oficial 4 GB RAM / 2 vCPU; recomendado 8 GB+ / 4+ vCPU ✅. Serviços não usados (Realtime, Edge Runtime, imgproxy, analytics) podem ser removidos para economizar recursos ✅ — **[PROPOSTA]** iniciar enxuto.
 
 ## 4. Fila e processamento de jobs **[PROPOSTA]**
@@ -221,3 +223,22 @@ Implementado localmente conforme as seções acima, com estas particularidades:
 ### Decisões de implementação a registrar
 - `next build` já não roda lint (Next 16 ✅); lint é script próprio. `middleware` foi renomeado `proxy` no Next 16 ❓ — nenhuma sessão é gerenciada ainda; avaliar na Entrega 2.
 - CSP restritiva e verificação de sessão no servidor ficam para a Entrega 2 (precisa de nonces e de Auth).
+
+## 12. Supabase em produção: a instalação existente (Kong) — decisão A-24
+
+**Decisão:** manter o Supabase self-hosted atual do EasyPanel (`qarvon-supabase-triatlo…`): gateway Kong 3.9.1, GoTrue v2.186.0, PostgREST 14.8, PostgreSQL provavelmente 15 (a confirmar). Nenhuma instância nova, nenhuma troca de gateway, nenhum volume ou dado recriado.
+
+```
+Navegador/PWA ──HTTPS──► web (Next.js)                     usa só a chave PÚBLICA: anon JWT legado
+      │                      │
+      └──HTTPS (apikey = anon JWT + sessão do usuário)──► Kong ─► Auth (GoTrue) · REST (PostgREST + RLS) · Storage (bucket privado)
+                                                          │
+worker (futuro) ──HTTPS (SERVICE_ROLE_KEY, só backend)────┘            PostgreSQL: sem porta publicada (verificado de fora)
+```
+
+- **Chaves:** o Kong compara o `apikey` com `ANON_KEY`/`SERVICE_ROLE_KEY` (JWT HS256 assinados com `JWT_SECRET`). Só o trio legado é compatível; chaves opacas/assimétricas são da stack de referência e não se usam aqui.
+- **Estado de segurança conhecido:** `JWT_SECRET` padrão público em uso até a fase 1 de P-34 (credenciais). O app **recusa** chaves de demonstração e privilegiadas.
+- **Persistência:** as 7 migrations (RLS em todas as tabelas) serão aplicadas ao PostgreSQL existente com `migrate.sh --container <db>` após backup e autorização; testes SQL em modo `--production` (transação revertida) e testes HTTPS.
+- **Sem mudanças no desenho do app:** o cliente Supabase apenas aceita o nome `…ANON_KEY` além de `…PUBLISHABLE_KEY` e lê a configuração em runtime.
+- **Limitações da stack Kong atual:** sem backups agendados (a stack de referência tinha); `/functions/v1` responde sem chave por desenho do upstream; rotação de chaves de criptografia não documentada.
+- **Operação:** [SUPABASE_EXISTING.md](SUPABASE_EXISTING.md).

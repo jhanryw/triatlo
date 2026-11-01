@@ -5,8 +5,8 @@
 #   PGHOST=db PGUSER=... PGPASSWORD=... bash supabase/migrate.sh        # libpq variables (e.g. inside the compose "backup" container)
 #   bash supabase/migrate.sh --container <db-container-name> [--user supabase_admin] [--db postgres] [--dry-run|--status]
 #
-#   --dry-run   list what would be applied, change nothing
-#   --status    print every migration with applied/pending state and verify the recorded checksums against the files
+#   --dry-run   list what would be applied; strictly read-only (writes nothing, not even the bookkeeping table)
+#   --status    read-only: print every migration with applied/pending state and verify the recorded checksums against the files
 #               (exit 1 on a checksum mismatch or a recorded migration whose file is missing)
 #
 # - already-applied migrations are skipped; if an applied file was EDITED afterwards the run STOPS (migrations are immutable);
@@ -37,10 +37,24 @@ run_psql() {
 }
 sha() { if command -v sha256sum >/dev/null 2>&1; then sha256sum "$1" | cut -d' ' -f1; else shasum -a 256 "$1" | cut -d' ' -f1; fi; }
 
-run_psql -c "create schema if not exists supabase_migrations;
-create table if not exists supabase_migrations.triatlo_applied (version text primary key, name text not null, checksum text not null, applied_at timestamptz not null default now());" >/dev/null
+# 1) version guard first: it is read-only and must run before anything is written
+PGV="$(run_psql -At -c "show server_version_num" | head -n1)"
+if [ "${PGV:-0}" -lt 150000 ]; then
+  echo "REFUSED: PostgreSQL 15+ is required (ON DELETE SET NULL (column) in the migrations); server_version_num=$PGV" >&2; exit 1
+fi
 
-APPLIED="$(run_psql -At -F '|' -c "select version, checksum from supabase_migrations.triatlo_applied order by version")"
+# 2) bookkeeping. Read-only modes (--dry-run, --status) never write: the table is not even created just to look.
+if [ "$DRY" = 1 ] || [ "$STATUS" = 1 ]; then
+  if [ "$(run_psql -At -c "select to_regclass('supabase_migrations.triatlo_applied') is not null")" = "t" ]; then
+    APPLIED="$(run_psql -At -F '|' -c "select version, checksum from supabase_migrations.triatlo_applied order by version")"
+  else
+    APPLIED=""
+  fi
+else
+  run_psql -c "create schema if not exists supabase_migrations;
+create table if not exists supabase_migrations.triatlo_applied (version text primary key, name text not null, checksum text not null, applied_at timestamptz not null default now());" >/dev/null
+  APPLIED="$(run_psql -At -F '|' -c "select version, checksum from supabase_migrations.triatlo_applied order by version")"
+fi
 if [ "$STATUS" = 1 ]; then
   bad=0; seen=""
   for file in "$DIR"/*.sql; do
