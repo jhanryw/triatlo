@@ -3,10 +3,10 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "description": "Triatlo Inteligente \u2014 background worker (scheduler, jobs, push). Skeleton only in Delivery 1.",
+  "description": "Triatlo Inteligente — background worker (scheduler, jobs, push). Skeleton only in Delivery 1.",
   "scripts": {
     "dev": "tsx watch src/main.ts",
-    "build": "esbuild src/main.ts --bundle --platform=node --format=esm --target=node22 --outfile=dist/main.mjs --sourcemap",
+    "build": "esbuild src/main.ts --bundle --platform=node --format=esm --target=node22 --outfile=dist/main.mjs --sourcemap --banner:js=\"import { createRequire as __cr } from 'node:module'; const require = __cr(import.meta.url);\"",
     "start": "node dist/main.mjs",
     "typecheck": "tsc -p tsconfig.json",
     "test": "vitest run"
