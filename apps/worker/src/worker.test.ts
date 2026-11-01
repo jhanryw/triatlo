@@ -6,14 +6,23 @@ import { createTickLoop } from "./loop";
 
 describe("parseWorkerConfig", () => {
   it("has safe defaults", () => {
-    expect(parseWorkerConfig({})).toEqual({ tickSeconds: 30, healthPort: 8081, logLevel: "info" });
+    expect(parseWorkerConfig({})).toEqual({ tickSeconds: 30, healthPort: 8081, logLevel: "info", supabase: null, vapid: null });
   });
   it("parses and validates env", () => {
     expect(parseWorkerConfig({ WORKER_TICK_SECONDS: "10", WORKER_HEALTH_PORT: "9000", LOG_LEVEL: "debug" })).toEqual({
       tickSeconds: 10,
       healthPort: 9000,
       logLevel: "debug",
+      supabase: null,
+      vapid: null,
     });
+    const full = parseWorkerConfig({ SUPABASE_URL: "https://api.example.com", SUPABASE_SERVICE_ROLE_KEY: "x".repeat(30), VAPID_PUBLIC_KEY: "p".repeat(30), VAPID_PRIVATE_KEY: "q".repeat(30), VAPID_SUBJECT: "mailto:me@example.com" });
+    expect(full.supabase?.url).toBe("https://api.example.com");
+    expect(full.vapid?.subject).toBe("mailto:me@example.com");
+    // half-configured credentials never enable a feature
+    expect(parseWorkerConfig({ SUPABASE_URL: "https://api.example.com" }).supabase).toBeNull();
+    expect(parseWorkerConfig({ VAPID_PUBLIC_KEY: "p".repeat(30), VAPID_PRIVATE_KEY: "q".repeat(30) }).vapid).toBeNull();
+    expect(() => parseWorkerConfig({ VAPID_SUBJECT: "not-a-subject" })).toThrow();
     expect(() => parseWorkerConfig({ WORKER_TICK_SECONDS: "0" })).toThrow();
     expect(() => parseWorkerConfig({ LOG_LEVEL: "verbose" })).toThrow();
   });

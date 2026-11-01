@@ -12,6 +12,8 @@ COPY apps/web/package.json apps/web/
 COPY apps/worker/package.json apps/worker/
 COPY packages/shared/package.json packages/shared/
 COPY packages/domain/package.json packages/domain/
+COPY packages/ingest/package.json packages/ingest/
+COPY packages/data/package.json packages/data/
 RUN npm ci --no-audit --no-fund
 
 # ---- build ----

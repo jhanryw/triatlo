@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "description": "Triatlo Inteligente — background worker (scheduler, jobs, push). Skeleton only in Delivery 1.",
+  "description": "Triatlo Inteligente \u2014 background worker (scheduler, jobs, push). Skeleton only in Delivery 1.",
   "scripts": {
     "dev": "tsx watch src/main.ts",
     "build": "esbuild src/main.ts --bundle --platform=node --format=esm --target=node22 --outfile=dist/main.mjs --sourcemap",
@@ -14,11 +14,16 @@
   "dependencies": {
     "@triatlo/shared": "0.1.0",
     "@triatlo/domain": "0.1.0",
-    "zod": "4.6.7"
+    "zod": "4.6.7",
+    "@triatlo/data": "0.1.0",
+    "@supabase/supabase-js": "2.118.0",
+    "web-push": "3.6.7"
   },
   "devDependencies": {
     "esbuild": "0.28.2",
     "tsx": "4.23.15",
-    "vitest": "5.0.5"
+    "vitest": "5.0.5",
+    "@types/web-push": "3.6.4",
+    "@types/node": "22.20.5"
   }
 }

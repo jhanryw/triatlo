@@ -1,0 +1,30 @@
+{
+  "name": "@triatlo/data",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Data access and orchestration shared by the web app (user session) and the worker (service role). All writes respect RLS.",
+  "exports": {
+    ".": {
+      "types": "./src/index.ts",
+      "default": "./src/index.ts"
+    },
+    "./testing": {
+      "types": "./src/testing.ts",
+      "default": "./src/testing.ts"
+    }
+  },
+  "scripts": {
+    "typecheck": "tsc -p tsconfig.json",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "2.118.0",
+    "@triatlo/domain": "0.1.0",
+    "@triatlo/ingest": "0.1.0",
+    "@triatlo/shared": "0.1.0"
+  },
+  "devDependencies": {
+    "vitest": "5.0.5"
+  }
+}

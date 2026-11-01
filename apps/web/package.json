@@ -2,7 +2,7 @@
   "name": "@triatlo/web",
   "version": "0.1.0",
   "private": true,
-  "description": "Triatlo Inteligente — Next.js PWA",
+  "description": "Triatlo Inteligente \u2014 Next.js PWA",
   "scripts": {
     "dev": "next dev",
     "build": "next build",
@@ -14,7 +14,9 @@
   "dependencies": {
     "@supabase/ssr": "0.12.7",
     "@supabase/supabase-js": "2.118.0",
+    "@triatlo/data": "0.1.0",
     "@triatlo/domain": "0.1.0",
+    "@triatlo/ingest": "0.1.0",
     "@triatlo/shared": "0.1.0",
     "next": "16.4.3",
     "react": "19.3.1",

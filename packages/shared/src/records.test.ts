@@ -83,3 +83,28 @@ describe("completed workouts, meals and estimates", () => {
     expect(() => NutritionEstimateInputSchema.parse({ method: "guess", energyKcal: 10 })).toThrow();
   });
 });
+
+import { DEFAULT_RULE_SET_PARAMS, MealAnalysisResultSchema, RuleSetParamsSchema } from "./index";
+
+describe("engine contracts", () => {
+  it("the project's draft rule set is valid, relative, reduction-only and conservative", () => {
+    const p = RuleSetParamsSchema.parse(DEFAULT_RULE_SET_PARAMS);
+    expect(p.reduction.durationFraction).toBeLessThanOrEqual(0.5);
+    expect(p.reduction.maxAutoFraction).toBeLessThanOrEqual(p.reduction.durationFraction);
+    expect(Object.keys(p).sort()).toEqual(["horizonHours", "lookbackDays", "minKnownDays", "reduction", "schemaVersion", "sleep", "stability", "subjective"]);
+  });
+  it("rejects parameters that would allow large cuts or unknown knobs", () => {
+    const bad = { ...DEFAULT_RULE_SET_PARAMS, reduction: { durationFraction: 0.9, maxAutoFraction: 0.9 } };
+    expect(() => RuleSetParamsSchema.parse(bad)).toThrow();
+    expect(() => RuleSetParamsSchema.parse({ ...DEFAULT_RULE_SET_PARAMS, increaseFraction: 0.1 })).toThrow();
+  });
+  it("validates untrusted AI meal output and keeps unknown values null", () => {
+    const ok = MealAnalysisResultSchema.parse({
+      isFood: true, overallConfidence: "low", uncertaintyNotes: "óleo de cozimento não visível",
+      items: [{ name: "arroz", quantity: 150, unit: "g", confidence: "medium", energyKcal: 190, proteinG: null, carbohydrateG: 42, fatG: null }],
+    });
+    expect(ok.items[0]?.proteinG).toBeNull();
+    expect(() => MealAnalysisResultSchema.parse({ isFood: true, overallConfidence: "certain", uncertaintyNotes: null, items: [] })).toThrow();
+    expect(() => MealAnalysisResultSchema.parse({ isFood: true, overallConfidence: "low", uncertaintyNotes: null, items: [], diagnosis: "x" })).toThrow();
+  });
+});

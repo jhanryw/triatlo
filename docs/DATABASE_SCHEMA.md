@@ -31,6 +31,16 @@
 | Importação | `data_import_provenance` | origem, arquivo, hash, contagens |
 | Storage | bucket `meal-photos` (privado) + políticas em `storage.objects` | caminho `"<user id>/…"`; condicional à existência do Storage |
 
+## Migrations 8–9 (motor e planejamento)
+| Objeto | Regras |
+|---|---|
+| `availability_windows` | janelas de treino/trabalho/etc. por dia da semana; fim > início |
+| `training_rule_sets` | parâmetros imutáveis e versionados; só `status`/`approved_at`/`notes` mudam; nasce `draft` |
+| `ai_calls` | só insert/select (registro sem conteúdo: finalidade, provedor, modelo, categorias, tokens, status) |
+| `meal_analyses` | resultado bruto da IA (validado) + confiança + status; permanece estimativa até a revisão |
+| `v_current_planned_workouts`, `v_daily_context` | `security_invoker`; uma linha por dia local, nulos = desconhecido, `timezone_assumed` quando o perfil não tem fuso |
+| `commit_plan_version(...)` | RPC `security invoker`: nova versão + proposta aplicada + auditoria atômicas |
+
 ## Contratos TypeScript
 `packages/shared/src/records.ts` (entradas validadas com zod) e `packages/domain/src/availability.ts` (`dayStatuses`, `measureState`, `averageOfKnown`: dado ausente nunca vira zero). `packages/shared/src/db-contract.test.ts` falha se um vocabulário `CHECK … IN (…)` do SQL divergir das constantes do TypeScript ou se um campo de schema não for coluna real.
 

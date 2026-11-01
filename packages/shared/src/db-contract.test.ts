@@ -2,6 +2,10 @@ import { readFileSync, readdirSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import {
   ACTOR_KINDS,
+  AI_CALL_STATUSES,
+  AVAILABILITY_KINDS,
+  MEAL_ANALYSIS_STATUSES,
+  RULE_SET_STATUSES,
   APPROVAL_DECISIONS,
   AUDIT_ACTIONS,
   CHANGE_CLASSES,
@@ -23,6 +27,7 @@ import {
   SESSION_STATUSES,
   SOURCE_KINDS,
   TRIGGER_TYPES,
+  AvailabilityWindowInputSchema,
   CompletedWorkoutInputSchema,
   DailyCheckinInputSchema,
   MealInputSchema,
@@ -87,6 +92,11 @@ describe("SQL CHECK vocabularies match packages/shared", () => {
     ["scheduled_notifications_status_check", ["pending", "claimed", "sent", "failed", "cancelled", "superseded"]],
     ["background_jobs_type_check", JOB_TYPES],
     ["background_jobs_status_check", JOB_STATUSES],
+    ["availability_windows_kind_check", AVAILABILITY_KINDS],
+    ["training_rule_sets_status_check", RULE_SET_STATUSES],
+    ["ai_calls_status_check", AI_CALL_STATUSES],
+    ["meal_analyses_status_check", MEAL_ANALYSIS_STATUSES],
+    ["meal_analyses_confidence_check", NUTRITION_CONFIDENCES],
   ];
   it.each(cases)("%s", (constraint, expected) => {
     expect(sorted(checkList(constraint))).toEqual(sorted(expected));
@@ -131,11 +141,12 @@ describe("record schemas only use real columns", () => {
     ["meals", MealInputSchema],
     ["meal_items", MealItemInputSchema],
     ["nutrition_estimates", NutritionEstimateInputSchema],
+    ["availability_windows", AvailabilityWindowInputSchema],
   ];
   void shapes;
   it.each(map)("%s", (table, schema) => {
     const columns = columnsOf(table);
-    const exceptions: Record<string, string> = { plannedSessionId: "planned_session_id", photoPath: "photo_path" };
+    const exceptions: Record<string, string> = { plannedSessionId: "planned_session_id", photoPath: "photo_path", startsAt: "starts_at", endsAt: "ends_at" };
     for (const key of Object.keys(shapeOf(schema))) {
       const column = exceptions[key] ?? snake(key);
       expect(columns.has(column), `${table}.${column} (from "${key}") is not a column`).toBe(true);

@@ -87,3 +87,9 @@ export const PLAN_STATUSES = ["active", "archived"] as const;
 export const IMPORT_STATUSES = ["started", "succeeded", "failed", "partial"] as const;
 export const APPROVAL_DECISIONS = ["approved", "rejected"] as const;
 export const DISPLAY_MODES = ["standalone", "browser"] as const;
+
+export const AVAILABILITY_KINDS = ["training", "work", "commute", "meal", "blocked"] as const;
+export type AvailabilityKind = (typeof AVAILABILITY_KINDS)[number];
+export const RULE_SET_STATUSES = ["draft", "approved", "retired"] as const;
+export const AI_CALL_STATUSES = ["ok", "error", "blocked"] as const;
+export const MEAL_ANALYSIS_STATUSES = ["pending", "succeeded", "failed", "reviewed"] as const;

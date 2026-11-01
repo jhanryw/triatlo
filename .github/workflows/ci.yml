@@ -87,6 +87,30 @@ jobs:
           DATABASE_URL: postgresql://supabase_admin:${{ github.sha }}@localhost:5432/postgres
         run: bash supabase/tests/run.sh
 
+      # Same PostgREST version as production (14.8). supabase-js -> PostgREST -> this database, with real RLS and the JWT roles.
+      - name: Start PostgREST
+        run: |
+          JWT_SECRET="$(openssl rand -hex 32)"
+          echo "::add-mask::$JWT_SECRET"
+          echo "TRIATLO_IT_JWT_SECRET=$JWT_SECRET" >> "$GITHUB_ENV"
+          docker run -d --name postgrest --network host \
+            -e PGRST_DB_URI="postgres://supabase_admin:${{ github.sha }}@localhost:5432/postgres" \
+            -e PGRST_DB_SCHEMAS=public -e PGRST_DB_ANON_ROLE=anon -e PGRST_JWT_SECRET="$JWT_SECRET" \
+            -e PGRST_SERVER_PORT=3001 -e PGRST_ADMIN_SERVER_PORT=3002 \
+            postgrest/postgrest:v14.8
+          for i in $(seq 1 30); do curl -fsS http://127.0.0.1:3002/ready && break; sleep 1; done
+          curl -fsS http://127.0.0.1:3002/ready || { docker logs postgrest; exit 1; }
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - name: Integration tests (data layer and worker handlers against real PostgREST + RLS)
+        env:
+          TRIATLO_IT_REST_URL: http://127.0.0.1:3001
+          TRIATLO_IT_DATABASE_URL: postgresql://supabase_admin:${{ github.sha }}@localhost:5432/postgres
+        run: npm test -w @triatlo/data -w @triatlo/worker
+
   docker:
     name: Docker build and smoke test
     needs: quality

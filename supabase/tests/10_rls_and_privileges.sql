@@ -7,7 +7,8 @@ declare
   expected text[] := array['profiles', 'user_preferences', 'data_import_provenance', 'training_plans', 'training_plan_versions',
     'planned_workouts', 'completed_workouts', 'workout_change_proposals', 'user_approvals', 'adaptation_audit',
     'daily_checkins', 'sleep_observations', 'physiological_observations', 'meals', 'meal_items', 'nutrition_estimates',
-    'push_subscriptions', 'scheduled_notifications', 'background_jobs'];
+    'push_subscriptions', 'scheduled_notifications', 'background_jobs',
+    'availability_windows', 'training_rule_sets', 'ai_calls', 'meal_analyses'];
 begin
   -- 1. CI guard: any table in public WITHOUT row level security fails the build
   select string_agg(c.relname, ', ') into missing
@@ -34,6 +35,13 @@ begin
     perform tests.assert(not has_function_privilege('anon', t, 'execute'), 'anon can execute ' || t);
     perform tests.assert(not has_function_privilege('authenticated', t, 'execute'), 'authenticated can execute ' || t);
     perform tests.assert(has_function_privilege('service_role', t, 'execute'), 'service_role cannot execute ' || t);
+  end loop;
+
+  -- 4b. views: authenticated only, and they run with the CALLER's rights (security_invoker) so RLS applies
+  foreach t in array array['v_daily_context', 'v_current_planned_workouts'] loop
+    perform tests.assert(not has_table_privilege('anon', 'public.' || t, 'select'), 'anon can select view ' || t);
+    perform tests.assert(has_table_privilege('authenticated', 'public.' || t, 'select'), 'authenticated cannot select view ' || t);
+    perform tests.assert((select coalesce(reloptions::text, '') like '%security_invoker=true%' from pg_class where oid = ('public.' || t)::regclass), 'view ' || t || ' must be security_invoker');
   end loop;
 
   -- 5. anon is rejected at runtime too

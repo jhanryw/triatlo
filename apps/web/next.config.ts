@@ -19,7 +19,9 @@ const nextConfig: NextConfig = {
   // Monorepo: trace dependencies from the repository root (npm runs this from apps/web).
   outputFileTracingRoot: path.join(process.cwd(), "../.."),
   // Workspace packages ship TypeScript sources.
-  transpilePackages: ["@triatlo/shared", "@triatlo/domain"],
+  transpilePackages: ["@triatlo/shared", "@triatlo/domain", "@triatlo/data", "@triatlo/ingest"],
+  // Meal photos from the phone camera go through Server Actions.
+  experimental: { serverActions: { bodySizeLimit: "12mb" } },
   async headers() {
     return [
       { source: "/:path*", headers: securityHeaders },

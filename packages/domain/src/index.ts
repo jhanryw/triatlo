@@ -3,3 +3,8 @@ export * from "./context";
 export * from "./autonomy";
 export * from "./plan-versioning";
 export * from "./availability";
+export * from "./daily-context";
+export * from "./adaptation";
+export * from "./time";
+export * from "./week-planner";
+export * from "./nutrition";

@@ -25,3 +25,11 @@ export const DATA_QUALITY_LABELS: Record<DataQuality, string> = {
   missing: "Sem dados",
   conflicting: "Dados conflitantes",
 };
+
+export const MEAL_TYPE_LABELS: Record<"breakfast" | "lunch" | "snack" | "dinner" | "other", string> = {
+  breakfast: "Café da manhã",
+  lunch: "Almoço",
+  snack: "Lanche",
+  dinner: "Jantar",
+  other: "Outra",
+};

@@ -244,3 +244,16 @@ worker (futuro) ──HTTPS (SERVICE_ROLE_KEY, só backend)────┘      
 - **Banco identificado como serviço Compose `db`** (`qarvon_supabase-triatlo-db-1`, confirmado em 2026-10-31); `…-meta-1` é o postgres-meta. Toda ferramenta operacional valida isso (`supabase/lib/db-guard.sh`) antes de escrever.
 - **Persistência:** os volumes estão em *bind mounts* dentro do diretório de código do EasyPanel (risco documentado e plano de mitigação em SUPABASE_EXISTING §3).
 - **Operação:** [SUPABASE_EXISTING.md](SUPABASE_EXISTING.md) · credenciais: [CREDENTIAL_CORRECTION_PLAN.md](CREDENTIAL_CORRECTION_PLAN.md).
+
+## 13. Entrega integrada (2026-10-31)
+```
+apps/web (Next.js, src/proxy.ts)  ──┐                       ┌── apps/worker (agenda, fila, push)
+  páginas + server actions + /api   ├──► packages/data ◄────┤
+                                    │    (Ctx{db,userId})   │   service-role só no backend
+packages/domain (regras puras) ◄────┤          │
+packages/ingest (GPX/TCX/Apple) ◄───┘          ▼
+packages/shared (contratos zod)        PostgREST/Auth/Storage (Supabase existente, Kong) ► PostgreSQL + RLS
+```
+- Um único caminho de leitura/escrita (`packages/data`) para web e worker; o motor (`packages/domain`) é puro e testável sem banco.
+- Fluxo de ponta a ponta: check-in/arquivo do relógio/refeição → `v_daily_context` → `evaluateAdaptation` (worker diário ou "Analisar agora") → proposta com justificativa → aprovação em *Hoje* → `commit_plan_version` → auditoria e notificação.
+- Verificado localmente com PostgreSQL 17 + PostgREST reais (RLS) e a UI no navegador (login → perfil → janelas → planejar semana → check-in → proposta → aprovar → registrar treino → importar arquivo → revisar refeição). **GoTrue não foi exercitado** (usei um substituto local só para o login); o login real depende das credenciais corrigidas em produção (G2).

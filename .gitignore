@@ -60,8 +60,9 @@ export.xml
 export.zip
 *.sqlite
 *.sqlite3
-data/
-imports/
+# Personal data folders at the repository root only (packages/data is source code).
+/data/
+/imports/
 
 # Estado local de ferramentas
 .claude/settings.local.json

@@ -81,3 +81,8 @@ Sem integrações de terceiros além de SMTP (a definir, Q-05), provedor de IA (
 
 ## 6. Estado após a Entrega 1
 Nenhuma integração foi implementada. Existem apenas contratos: `DataSource`/`NormalizedRecord` e `AiProvider`/`AiDisclosure` (`packages/shared`), a UI de Web Push inativa e o stub `POST /api/push/subscribe` (501). A tela Configurações → Integrações informa que o Amazfit "não está configurado" e que não há API pública comprovada.
+
+## 7. Estado após a entrega integrada (2026-10-31)
+- **Amazfit / Zepp (real, verificado só com arquivos de teste):** importação de **GPX/TCX** e do **export.xml do Apple Health** em Configurações → Relógio. O app lê o arquivo em *stream*, mostra o inventário por origem (o nome que o Zepp grava no app Saúde aparece ali), e só grava depois da confirmação. Sono, FC de repouso, HRV e treinos entram com procedência (`file_import`, hash do arquivo, `external_id`); reimportar não duplica. **Ainda não foi validado com um export real do seu relógio** — isso depende do seu arquivo. Pelo iPhone: Zepp → Saúde (Apple) → app Saúde → exportar → descompactar `export.zip` no app Arquivos → escolher `export.xml`.
+- **IA de refeições:** implementada (`packages/data/src/ai.ts`), desligada até haver `OPENAI_API_KEY` + `AI_MODEL` no serviço `web` **e** consentimento do usuário. Nunca testada contra um provedor real (testes usam provedor simulado).
+- **Web Push:** `POST /api/push/subscribe` grava a inscrição e o consentimento (RLS); o worker envia com VAPID. Falta gerar chaves VAPID, configurá-las e testar num iPhone (iOS ≥ 16.4, app na Tela de Início).
