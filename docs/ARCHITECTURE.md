@@ -241,4 +241,6 @@ worker (futuro) ──HTTPS (SERVICE_ROLE_KEY, só backend)────┘      
 - **Persistência:** as 7 migrations (RLS em todas as tabelas) serão aplicadas ao PostgreSQL existente com `migrate.sh --container <db>` após backup e autorização; testes SQL em modo `--production` (transação revertida) e testes HTTPS.
 - **Sem mudanças no desenho do app:** o cliente Supabase apenas aceita o nome `…ANON_KEY` além de `…PUBLISHABLE_KEY` e lê a configuração em runtime.
 - **Limitações da stack Kong atual:** sem backups agendados (a stack de referência tinha); `/functions/v1` responde sem chave por desenho do upstream; rotação de chaves de criptografia não documentada.
-- **Operação:** [SUPABASE_EXISTING.md](SUPABASE_EXISTING.md).
+- **Banco identificado como serviço Compose `db`** (`qarvon_supabase-triatlo-db-1`, confirmado em 2026-10-31); `…-meta-1` é o postgres-meta. Toda ferramenta operacional valida isso (`supabase/lib/db-guard.sh`) antes de escrever.
+- **Persistência:** os volumes estão em *bind mounts* dentro do diretório de código do EasyPanel (risco documentado e plano de mitigação em SUPABASE_EXISTING §3).
+- **Operação:** [SUPABASE_EXISTING.md](SUPABASE_EXISTING.md) · credenciais: [CREDENTIAL_CORRECTION_PLAN.md](CREDENTIAL_CORRECTION_PLAN.md).

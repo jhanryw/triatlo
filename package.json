@@ -22,9 +22,10 @@
     "build": "npm run build --workspaces --if-present",
     "security:check": "node scripts/security-check.mjs",
     "icons": "node scripts/generate-icons.mjs",
-    "check": "npm run lint && npm run typecheck && npm run test && npm run build && npm run security:check && npm run supabase:check",
+    "check": "npm run lint && npm run typecheck && npm run test && npm run build && npm run security:check && npm run supabase:check && npm run ops:test",
     "supabase:check": "node scripts/check-supabase-stack.mjs",
-    "db:test": "bash supabase/tests/run.sh"
+    "db:test": "bash supabase/tests/run.sh",
+    "ops:test": "bash supabase/tests/guard-test.sh"
   },
   "devDependencies": {
     "@eslint/js": "9.39.5",

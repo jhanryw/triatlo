@@ -15,7 +15,10 @@
 # - never run against production without a verified backup (infra/backup/RESTORE.md).
 set -euo pipefail
 
-DIR="$(cd "$(dirname "$0")/migrations" && pwd)"
+HERE="$(cd "$(dirname "$0")" && pwd)"
+DIR="$HERE/migrations"
+# shellcheck disable=SC1091
+source "$HERE/lib/db-guard.sh"
 CONTAINER=""; DB_USER="supabase_admin"; DB_NAME="postgres"; DRY=0; STATUS=0
 while [ $# -gt 0 ]; do
   case "$1" in
@@ -30,11 +33,14 @@ while [ $# -gt 0 ]; do
 done
 
 run_psql() {
-  if [ -n "$CONTAINER" ]; then docker exec -i "$CONTAINER" psql -U "$DB_USER" -d "$DB_NAME" -X -q -v ON_ERROR_STOP=1 "$@"
+  if [ -n "$CONTAINER" ]; then docker exec -i "$CONTAINER" psql -h localhost -U "$DB_USER" -d "$DB_NAME" -X -q -v ON_ERROR_STOP=1 "$@"
   elif [ -n "${DATABASE_URL:-}" ]; then psql "$DATABASE_URL" -X -q -v ON_ERROR_STOP=1 "$@"
   elif [ -n "${PGHOST:-}" ]; then psql -X -q -v ON_ERROR_STOP=1 "$@"
   else echo "set DATABASE_URL, PGHOST (+ PG* variables) or use --container" >&2; exit 2; fi
 }
+# Identity guard BEFORE anything else (read-only): never operate on a container that is not the Supabase database.
+if [ -n "$CONTAINER" ]; then dg_assert_db_container "$CONTAINER" || exit 1; else dg_assert_sql_identity || exit 1; fi
+
 sha() { if command -v sha256sum >/dev/null 2>&1; then sha256sum "$1" | cut -d' ' -f1; else shasum -a 256 "$1" | cut -d' ' -f1; fi; }
 
 # 1) version guard first: it is read-only and must run before anything is written

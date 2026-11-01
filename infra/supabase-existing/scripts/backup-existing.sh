@@ -22,8 +22,17 @@ while [ $# -gt 0 ]; do
   esac
 done
 [ -n "$DB" ] || { echo "--db <container> is required (take the name from inspect-existing-stack.sh)" >&2; exit 2; }
-docker inspect "$DB" >/dev/null 2>&1 || { echo "container not found: $DB" >&2; exit 1; }
+HERE="$(cd "$(dirname "$0")" && pwd)"
+# shellcheck disable=SC1091
+source "$HERE/../../../supabase/lib/db-guard.sh"
+dg_assert_db_container "$DB" || exit 1            # must be the compose service "db" (supabase/postgres), never postgres-meta etc.
 docker exec "$DB" pg_isready -U postgres -h localhost >/dev/null || { echo "database is not ready" >&2; exit 1; }
+if [ -n "$STORAGE" ]; then
+  simg="$(docker inspect --format '{{.Config.Image}}' "$STORAGE" 2>/dev/null)" || { echo "storage container not found: $STORAGE" >&2; exit 1; }
+  ssvc="$(dg_label "$STORAGE" com.docker.compose.service)"
+  case "$simg" in *supabase/storage-api*) ;; *) echo "REFUSED: $STORAGE runs '$simg', expected supabase/storage-api" >&2; exit 1 ;; esac
+  [ -z "$ssvc" ] || [ "$ssvc" = "storage" ] || { echo "REFUSED: $STORAGE is compose service '$ssvc', expected 'storage'" >&2; exit 1; }
+fi
 
 umask 077; mkdir -p "$OUT"; chmod 700 "$OUT"
 ts="$(date -u +%Y%m%dT%H%M%SZ)"

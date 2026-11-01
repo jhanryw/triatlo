@@ -37,6 +37,7 @@ jobs:
       # After the build so browser bundles are scanned for privileged credential names.
       - run: npm run security:check
       - run: npm run supabase:check
+      - run: npm run ops:test   # database-container identification guard (fake docker, includes the postgres-meta incident)
 
   security:
     name: Dependency audit and secret scan

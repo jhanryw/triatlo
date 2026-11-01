@@ -15,6 +15,8 @@ while [ $# -gt 0 ]; do
 done
 umask 077
 exec > >(tee "$OUT") 2>&1
+# shellcheck disable=SC1091
+source "$(cd "$(dirname "$0")" && pwd)/../../../supabase/lib/db-guard.sh"
 
 DEMO_HASHES=(
   "1453cea2dc3799e9026e42b3e465e455256d5a149582e4c5b92d4c8d604731a2 JWT_SECRET"
@@ -57,8 +59,16 @@ for c in $ids; do
   printf "%s | %s | %s | %s/%s\n" "$c" "$(label "$c" com.docker.compose.service)" "$(docker inspect --format '{{.Config.Image}}' "$c")" \
     "$(docker inspect --format '{{.State.Status}}' "$c")" "$(docker inspect --format '{{if .State.Health}}{{.State.Health.Status}}{{else}}-{{end}}' "$c")"
 done
-[ -n "$DB" ] || DB="$(for c in $ids; do docker inspect --format '{{.Config.Image}}' "$c" | grep -q 'supabase/postgres' && echo "$c" && break; done)"
-echo "PostgreSQL container: ${DB:-NOT FOUND}"
+# The database is the compose service "db" running supabase/postgres:<tag>. NEVER match by a substring of the image name:
+# "supabase/postgres-meta" also contains "supabase/postgres" and has no psql (that was the earlier mis-identification).
+if [ -z "$DB" ]; then DB="$(dg_find_db_container "$PROJECT" 2>/dev/null)" || DB=""; fi
+if [ -n "$DB" ]; then
+  if dg_assert_db_container "$DB" 2>/tmp/dg.$$; then echo "PostgreSQL container: $DB   (verified: compose service 'db', supabase/postgres image, answers as a Supabase database)"
+  else echo "PostgreSQL container: $DB   NOT VERIFIED -> $(cat /tmp/dg.$$)"; DB=""; fi
+  rm -f /tmp/dg.$$
+else
+  echo "PostgreSQL container: NOT FOUND or AMBIGUOUS (compose service 'db' + image supabase/postgres:<tag>); pass --db <name> after checking section 2"
+fi
 
 echo; echo "== 3. Published host ports of the project (5432/6543/8000/8443 would be a red flag)"
 for c in $ids; do p="$(docker port "$c" 2>/dev/null)"; [ -n "$p" ] && printf "%s -> %s\n" "$c" "$(echo "$p" | tr '\n' ' ')"; done
@@ -75,6 +85,42 @@ for c in $ids; do
   s="$(label "$c" com.docker.compose.service)"; case "$s" in db|storage|*postgres*) 
     echo "-- $c ($s)"; docker inspect --format '{{range .Mounts}}   {{.Type}} {{if .Name}}{{.Name}}{{else}}{{.Source}}{{end}} -> {{.Destination}}{{"\n"}}{{end}}' "$c" ;; esac
 done
+
+echo; echo "== 5b. PERSISTENCE RISK: data that lives inside the EasyPanel code/compose directory (bind mounts)"
+WD=""; [ -n "$kong" ] && WD="$(label "$kong" com.docker.compose.project.working_dir)"
+echo "compose working dir: ${WD:-unknown}"
+if [ -n "$WD" ] && [ -d "$WD" ]; then
+  echo "is a git work tree : $( (test -d "$WD/.git" && echo yes) || echo no)   (yes = a redeploy may run git pull/reset/clean in this directory)"
+  echo "directory listing (names/permissions only; file CONTENTS are never read):"; ls -la "$WD" | sed 's/^/   /' | head -30
+  [ -f "$WD/.env" ] && echo "   .env permissions: $(stat -c '%A %U:%G' "$WD/.env" 2>/dev/null || stat -f '%Sp %Su:%Sg' "$WD/.env")  (holds the stack secrets: should not be world-readable)"
+  for f in docker-compose.yml compose.yml; do [ -f "$WD/$f" ] && echo "   $f last modified (≈ last deploy/render): $(stat -c '%y' "$WD/$f" 2>/dev/null | cut -d. -f1)"; done
+  echo "free space on that filesystem: $(df -h "$WD" | awk 'NR==2{print $4" free of "$2" ("$5" used)"}')"
+fi
+risky=0
+for c in $ids; do
+  s="$(label "$c" com.docker.compose.service)"
+  while IFS='|' read -r src dst; do
+    [ -n "$src" ] || continue
+    case "$dst" in /var/lib/postgresql/data|/var/lib/storage|/etc/postgresql-custom|/var/lib/postgresql) kind="DATA" ;; *) continue ;; esac
+    where="OUTSIDE the code dir"
+    case "$src" in "$WD"/*) where="INSIDE the EasyPanel code dir"; risky=1 ;; /etc/easypanel/*) where="INSIDE /etc/easypanel (managed by the panel)"; risky=1 ;; esac
+    echo "-- $c ($s): bind $src -> $dst : $where"
+    echo "   size: $(du -sh "$src" 2>/dev/null | cut -f1)   owner/mode: $(stat -c '%U:%G %a' "$src" 2>/dev/null)"
+    if [ -f "$src/PG_VERSION" ]; then
+      echo "   PG_VERSION born: $(stat -c '%w' "$src/PG_VERSION" 2>/dev/null)   (if this is OLDER than the compose file's last modification above, the data already survived at least one redeploy/render)"
+    fi
+    if [ -d "$WD/.git" ]; then
+      echo "   git: ignored=$(git -C "$WD" check-ignore -q "$src" 2>/dev/null && echo yes || echo no)   untracked/ignored entries here: $(git -C "$WD" status --porcelain --ignored -- "$src" 2>/dev/null | head -3 | tr '\n' ' ')"
+    fi
+  done < <(docker inspect --format '{{range .Mounts}}{{if eq .Type "bind"}}{{.Source}}|{{.Destination}}{{"\n"}}{{end}}{{end}}' "$c")
+  docker inspect --format '{{range .Mounts}}{{if eq .Type "volume"}}-- '"$c"' ('"$s"'): NAMED VOLUME {{.Name}} -> {{.Destination}}{{"\n"}}{{end}}{{end}}' "$c" | grep -E 'postgresql/data|var/lib/storage|postgresql-custom'
+done
+if [ "$risky" = 1 ]; then
+  echo "RISK: persistent data is stored INSIDE the directory the panel manages. It is lost if the service is destroyed/recreated (documented by EasyPanel),"
+  echo "      and may be lost or reset if a deploy re-renders/re-clones that directory. Take backups BEFORE any redeploy and prove persistence with persistence-marker.sh."
+else
+  echo "no persistent data found inside the panel-managed directory (named volumes or paths outside it)"
+fi
 
 echo; echo "== 6. Non-secret settings (allow-list) per container"
 for c in $ids; do

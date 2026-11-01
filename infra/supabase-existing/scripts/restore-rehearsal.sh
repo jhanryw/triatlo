@@ -9,6 +9,15 @@ while [ $# -gt 0 ]; do
   case "$1" in --db) DB="$2"; shift 2 ;; --dump) DUMP="$2"; shift 2 ;; -h|--help) sed -n '2,7p' "$0"; exit 0 ;; *) echo "unknown option: $1" >&2; exit 2 ;; esac
 done
 [ -n "$DB" ] && [ -f "$DUMP" ] || { echo "usage: --db <container> --dump <file>" >&2; exit 2; }
+HERE="$(cd "$(dirname "$0")" && pwd)"
+# shellcheck disable=SC1091
+source "$HERE/../../../supabase/lib/db-guard.sh"
+dg_assert_db_container "$DB" || exit 1            # BEFORE creating anything: must be the compose service "db"
+if [ -f "$DUMP.sha256" ]; then
+  expected="$(cut -d' ' -f1 "$DUMP.sha256")"
+  actual="$( (command -v sha256sum >/dev/null 2>&1 && sha256sum "$DUMP" || shasum -a 256 "$DUMP") | cut -d' ' -f1)"
+  [ "$expected" = "$actual" ] || { echo "REFUSED: checksum of $DUMP does not match $DUMP.sha256 (corrupted or altered backup)" >&2; exit 1; }
+fi
 P() { docker exec -i "$DB" psql -h localhost -U supabase_admin -X -q -At -v ON_ERROR_STOP=1 "$@"; }
 [ "$(P -d postgres -c "select count(*) from pg_database where datname='restore_test'")" = 0 ] || { echo "REFUSED: database restore_test already exists (not created by this script run); inspect it first" >&2; exit 1; }
 trap 'P -d postgres -c "drop database if exists restore_test" >/dev/null 2>&1 || true' EXIT

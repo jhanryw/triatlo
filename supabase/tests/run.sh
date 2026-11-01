@@ -21,13 +21,21 @@ while [ $# -gt 0 ]; do
   esac
 done
 
-if [ -n "$CONTAINER" ]; then PSQL=(docker exec -i "$CONTAINER" psql -U supabase_admin -d postgres -X -q -v ON_ERROR_STOP=1)
+if [ -n "$CONTAINER" ]; then PSQL=(docker exec -i "$CONTAINER" psql -h localhost -U supabase_admin -d postgres -X -q -v ON_ERROR_STOP=1)
 elif [ -n "${DATABASE_URL:-}" ]; then PSQL=(psql "$DATABASE_URL" -X -q -v ON_ERROR_STOP=1)
 elif [ -n "${PGHOST:-}" ]; then PSQL=(psql -X -q -v ON_ERROR_STOP=1)
 else echo "set DATABASE_URL (disposable DB), PG* variables, or use --container <db>" >&2; exit 2; fi
 [ -z "$CONTAINER" ] || [ "$PROD" = 1 ] || { echo "--container is only for --production" >&2; exit 2; }
 
 run_file() { "${PSQL[@]}" < "$1"; }   # files go through stdin so the same code works with docker exec
+run_psql() { "${PSQL[@]}" "$@"; }
+# shellcheck disable=SC1091
+source "$HERE/../lib/db-guard.sh"
+
+# Identity guard BEFORE any write: in production mode the target must be proven to be the Supabase database.
+if [ "$PROD" = 1 ]; then
+  if [ -n "$CONTAINER" ]; then dg_assert_db_container "$CONTAINER" || exit 1; else dg_assert_sql_identity || exit 1; fi
+fi
 
 if [ "$PROD" = 1 ]; then
   ok="$("${PSQL[@]}" -At -c "select (to_regclass('auth.users') is not null and to_regclass('storage.objects') is not null and to_regclass('supabase_migrations.triatlo_applied') is not null)")"
