@@ -29,21 +29,18 @@ end $$;
 create or replace function tests.as_user(p_uid uuid) returns void language plpgsql as $$
 begin
   perform set_config('request.jwt.claims', json_build_object('sub', p_uid, 'role', 'authenticated')::text, true);
-  perform set_config('request.jwt.claim.sub', p_uid::text, true);
   execute 'set local role authenticated';
 end $$;
 
 create or replace function tests.as_anon() returns void language plpgsql as $$
 begin
   perform set_config('request.jwt.claims', '', true);
-  perform set_config('request.jwt.claim.sub', '', true);
   execute 'set local role anon';
 end $$;
 
 create or replace function tests.as_service() returns void language plpgsql as $$
 begin
   perform set_config('request.jwt.claims', json_build_object('role', 'service_role')::text, true);
-  perform set_config('request.jwt.claim.sub', '', true);
   execute 'set local role service_role';
 end $$;
 
@@ -51,5 +48,4 @@ create or replace function tests.reset() returns void language plpgsql as $$
 begin
   execute 'reset role';
   perform set_config('request.jwt.claims', '', true);
-  perform set_config('request.jwt.claim.sub', '', true);
 end $$;

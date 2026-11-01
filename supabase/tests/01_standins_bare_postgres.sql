@@ -23,11 +23,13 @@ begin
     create schema if not exists auth;
     create table auth.users (id uuid primary key, email text);
   end if;
-  if to_regprocedure('auth.uid()') is null then
-    create function auth.uid() returns uuid language sql stable as
-      $f$ select coalesce(nullif(current_setting('request.jwt.claim.sub', true), ''),
-                          (nullif(current_setting('request.jwt.claims', true), '')::jsonb ->> 'sub'))::uuid $f$;
-  end if;
+  -- GoTrue's own migrations define auth.uid() to read the JWT claims that PostgREST (>= 10) sets in `request.jwt.claims`.
+  -- The bare image (no GoTrue run) ships a legacy version that reads only `request.jwt.claim.sub`, which PostgREST no
+  -- longer sets, so every RLS check would see NULL. Mirror the migrated definition here; production mode never touches it
+  -- and instead PROVES the real function (36_auth_uid_contract.sql).
+  create or replace function auth.uid() returns uuid language sql stable as
+    $f$ select coalesce(nullif(current_setting('request.jwt.claim.sub', true), ''),
+                        (nullif(current_setting('request.jwt.claims', true), '')::jsonb ->> 'sub'))::uuid $f$;
 
   if to_regclass('storage.objects') is null then
     create schema if not exists storage;
